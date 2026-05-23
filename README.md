@@ -53,7 +53,7 @@ The `Inference Gateway API` is a unified API to provide LLM inference capabiliti
 
 ## Stack Overview
 
-The Arcade Inference Gateway is a monolithic **AWS Lambda** function running a **Hono** web server with TypeScript.
+The Arcade Inference Gateway is a monolithic **AWS Lambda** function running a **Hono** web server with TypeScript. Bootstrapped with [Hono's AWS Lambda guide](https://hono.dev/docs/getting-started/aws-lambda).
 
 The following provider is supported:
 
