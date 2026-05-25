@@ -3,8 +3,11 @@
 *.d.ts
 node_modules
 
+!s3/swagger-ui/*.js
+
 # CDK asset staging directory
 .cdk.staging
 cdk.out
 
 .env
+swagger.json

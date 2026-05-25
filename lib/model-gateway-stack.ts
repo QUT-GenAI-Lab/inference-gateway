@@ -12,10 +12,16 @@ export class ModelGatewayStack extends cdk.Stack {
     const fn = new NodejsFunction(this, "lambda", {
       entry: "lambda/index.ts",
       handler: "handler",
-      runtime: lambda.Runtime.NODEJS_22_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
     });
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
+      // TODO: tighten CORS settings for production use
+      cors: {
+        allowedOrigins: ["*"],
+        allowedMethods: [lambda.HttpMethod.ALL],
+        allowedHeaders: ["*"],
+      },
     });
     new cdk.CfnOutput(this, "lambdaUrl", {
       value: fnUrl.url!,

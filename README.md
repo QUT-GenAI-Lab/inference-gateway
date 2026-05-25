@@ -59,6 +59,12 @@ The following provider is supported:
 
 - **AWS Bedrock**: AWS's managed service for hosting and serving foundation models from multiple providers. It provides an OpenAPI-compatible interface for inference.
 
+Key libraries used:
+
+- `hono`: Lightweight web framework for building the REST API.
+- `zod` & `@hono/zod-validator`: For request validation and schema definition.
+- `@hono/zod-openapi`: To generate OpenAPI specifications from Zod schemas.
+
 ## Usage
 
 The Inference Gateway is designed to be used by GenAI Arcade widgets through a simple REST API. Widgets can send requests to the gateway to perform various inference tasks without needing to manage model-specific logic.
@@ -67,7 +73,7 @@ The Inference Gateway is designed to be used by GenAI Arcade widgets through a s
 
 ```python
 import requests
-GENERATE_URL = "https://your-gateway-url.com/generate"
+GENERATE_URL = "https://your-gateway-url.com/generate/text"
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant."},
