@@ -27,6 +27,12 @@ export class ServingConstruct extends Construct {
 
     this.api = new apigateway.RestApi(this, "InferenceGatewayApi", {
       deployOptions: { stageName: "prod" },
+      // TODO: Customize CORS settings as needed for production use.
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: ["*"],
+      },
     });
 
     const integration = new apigateway.LambdaIntegration(fn, {

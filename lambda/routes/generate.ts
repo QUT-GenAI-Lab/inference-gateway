@@ -37,6 +37,7 @@ route.openapi(
   createRoute({
     path: "text",
     method: "post",
+    security: [{ apiKey: [] }],
     request: {
       body: {
         content: {

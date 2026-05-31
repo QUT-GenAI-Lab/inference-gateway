@@ -3,12 +3,12 @@ import path from "path";
 import { app } from "../lambda"; // Your main app file
 
 const args = process.argv.slice(2);
-const baseUrl = args[0] || null;
+const baseUrl = args[0] || "https://inference.genai-arcade.net";
 
 // Get the spec from your OpenAPIHono instance
 const spec = app.getOpenAPIDocument({
-  openapi: "3.0.0",
-  info: { title: "My API", version: "1.0.0" },
+  openapi: "3.1.0",
+  info: { title: "Inference Gateway API", version: "1.0.0" },
   ...(baseUrl ? { servers: [{ url: baseUrl }] } : {}),
 });
 
