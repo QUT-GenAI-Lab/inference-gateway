@@ -1,5 +1,5 @@
 {
-  "name": "model-gateway",
+  "name": "inference-gateway",
   "version": "0.1.0",
   "scripts": {
     "build": "tsc",
