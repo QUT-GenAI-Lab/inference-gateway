@@ -6,7 +6,9 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "openapi": "tsx scripts/generate-openapi.ts"
+    "openapi": "tsx scripts/generate-openapi.ts",
+    "predeploy": "npm run openapi",
+    "deploy": "cdk deploy"
   },
   "devDependencies": {
     "@types/jest": "^30",

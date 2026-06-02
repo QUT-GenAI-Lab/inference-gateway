@@ -13,14 +13,7 @@ const spec = app.getOpenAPIDocument({
 });
 
 // Write the spec to a file
-// s3/swagger-ui
-const OUTPUT_PATH = path.join(
-  __dirname,
-  "..",
-  "s3",
-  "swagger-ui",
-  "swagger.json",
-);
+const OUTPUT_PATH = path.join(__dirname, "..", "public", "swagger.json");
 fs.writeFileSync(OUTPUT_PATH, JSON.stringify(spec, null, 2));
 console.log(
   `OpenAPI spec generated at ${OUTPUT_PATH}` +
