@@ -7,7 +7,7 @@ const provider = new BedrockProvider();
 
 route.openapi(
   createRoute({
-    path: "text",
+    path: "chat",
     method: "post",
     security: [{ apiKey: [] }],
     request: {
