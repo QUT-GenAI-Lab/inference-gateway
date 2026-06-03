@@ -26,10 +26,15 @@
     "skipLibCheck": true,
     "typeRoots": [
       "./node_modules/@types"
-    ]
+    ],
+    "paths": {
+      "$lib/*": [
+        "./lambda/lib/*"
+      ],
+    }
   },
   "exclude": [
     "node_modules",
     "cdk.out"
-  ]
+  ],
 }

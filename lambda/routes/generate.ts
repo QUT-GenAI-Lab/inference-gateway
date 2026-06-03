@@ -1,37 +1,9 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "zod";
+import { GenerateChatSchema } from "../lib/provider";
+import { BedrockProvider } from "$lib/bedrock-provider";
 
 const route = new OpenAPIHono();
-
-const GenerateTextInSchema = z.object({
-  messages: z
-    .array(
-      z.object({
-        role: z.string(),
-        content: z.string(),
-      }),
-    )
-    .openapi({
-      example: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: "What is the capital of France?" },
-      ],
-    }),
-});
-
-const GenerateTextOutSchema = z.object({
-  content: z.string(),
-});
-
-async function generateText(
-  input: z.infer<typeof GenerateTextInSchema>,
-): Promise<{ content: string }> {
-  const { messages } = input;
-  const lastMessage = messages[messages.length - 1];
-  return {
-    content: `Last message received: ${lastMessage.content}`,
-  };
-}
+const provider = new BedrockProvider();
 
 route.openapi(
   createRoute({
@@ -42,7 +14,7 @@ route.openapi(
       body: {
         content: {
           "application/json": {
-            schema: GenerateTextInSchema,
+            schema: GenerateChatSchema.input,
           },
         },
       },
@@ -52,16 +24,16 @@ route.openapi(
         description: "Successful response",
         content: {
           "application/json": {
-            schema: GenerateTextOutSchema,
+            schema: GenerateChatSchema.output,
           },
         },
       },
     },
   }),
   async (c) => {
-    const { messages } = c.req.valid("json");
-    const result = await generateText({ messages });
-    return c.json(result);
+    const input = c.req.valid("json");
+    const output = await provider.generateChat(input);
+    return c.json(output);
   },
 );
 

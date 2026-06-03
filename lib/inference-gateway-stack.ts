@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { ServingConstruct } from "./constructs/serving-construct";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 export class InferenceGatewayStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -17,5 +18,13 @@ export class InferenceGatewayStack extends cdk.Stack {
     });
 
     new ServingConstruct(this, "InferenceGatewayServing", fn);
+
+    // Enable necessary permissions for Bedrock
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel", "bedrock:Converse"],
+        resources: ["*"], // TODO: tighten this to specific model ARNs later
+      }),
+    );
   }
 }
