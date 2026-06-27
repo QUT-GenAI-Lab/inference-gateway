@@ -11,3 +11,7 @@ cdk.out
 
 .env
 swagger.json
+
+*.safetensors
+*.model
+*.tar.gz

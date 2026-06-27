@@ -2,14 +2,14 @@ import {
   BedrockRuntimeClient,
   ConverseCommand,
 } from "@aws-sdk/client-bedrock-runtime";
-import { GenerateChatSchema, Provider } from "./provider";
+import { GenerateChatProvider, GenerateChatSchema } from "./provider";
 import { z } from "zod";
 
 const client = new BedrockRuntimeClient({
   region: process.env.AWS_REGION,
 });
 
-export class BedrockProvider implements Provider {
+export class BedrockProvider implements GenerateChatProvider {
   async generateChat(
     input: z.infer<typeof GenerateChatSchema.input>,
   ): Promise<z.infer<typeof GenerateChatSchema.output>> {

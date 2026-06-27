@@ -1,6 +1,7 @@
 import { handle } from "hono/aws-lambda";
 import generateRoute from "./routes/generate";
 import healthRoute from "./routes/health";
+import predictRoute from "./routes/predict";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 
@@ -21,5 +22,6 @@ app.openAPIRegistry.registerComponent("securitySchemes", "apiKey", {
 
 app.route("/health", healthRoute);
 app.route("/generate", generateRoute);
+app.route("/predict", predictRoute);
 
 export const handler = handle(app);
