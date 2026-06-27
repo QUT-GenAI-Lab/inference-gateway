@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import * as cdk from "aws-cdk-lib/core";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 /**
  * ServingConstruct is a CDK construct that sets up an API Gateway to route requests to a given Lambda function. It also configures API key-based authentication and usage plans for rate limiting and quotas.
@@ -20,6 +21,9 @@ export class ServingConstruct extends Construct {
   public readonly apiKey: apigateway.IApiKeyRef;
   public readonly usagePlan: apigateway.UsagePlan;
   public readonly domainName: apigateway.DomainName;
+  public readonly widgetKeySecret: secretsmanager.ISecret;
+  public readonly widgetApiKey: apigateway.IApiKeyRef;
+  public readonly widgetUsagePlan: apigateway.UsagePlan;
   public readonly DOMAIN_NAME = "inference.genai-arcade.net" as const;
 
   constructor(scope: Construct, id: string, fn: NodejsFunction) {
@@ -75,6 +79,39 @@ export class ServingConstruct extends Construct {
       stage: this.api.deploymentStage,
     });
 
+    // ---------- Widget backend API key (sourced from Secrets Manager) ----------
+
+    this.widgetKeySecret = new secretsmanager.Secret(this, "WidgetGatewayKeySecret", {
+      secretName: "genai-arcade/widgets/gateway-api-key",
+      description:
+        "API key value used by widget Lambdas to call the inference gateway.",
+      generateSecretString: {
+        passwordLength: 40,
+        excludePunctuation: true,
+        includeSpace: false,
+        requireEachIncludedType: false,
+      },
+    });
+
+    this.widgetApiKey = this.api.addApiKey("WidgetGatewayApiKey", {
+      apiKeyName: "widgets-to-inference-gateway-key",
+      value: this.widgetKeySecret.secretValue.unsafeUnwrap(),
+    });
+
+    this.widgetUsagePlan = this.api.addUsagePlan("WidgetGatewayUsagePlan", {
+      name: "WidgetGatewayUsagePlan",
+      throttle: {
+        rateLimit: 100,
+        burstLimit: 200,
+      },
+    });
+
+    this.widgetUsagePlan.addApiKey(this.widgetApiKey);
+
+    this.widgetUsagePlan.addApiStage({
+      stage: this.api.deploymentStage,
+    });
+
     // ---------- Set up custom domain with ACM certificate ----------
 
     const cert = new acm.Certificate(this, "InferenceGatewayCertificate", {
@@ -115,6 +152,18 @@ export class ServingConstruct extends Construct {
 
     new cdk.CfnOutput(this, "ApiKeyId", {
       value: this.apiKey.apiKeyRef.apiKeyId,
+    });
+
+    new cdk.CfnOutput(this, "WidgetGatewaySecretName", {
+      value: this.widgetKeySecret.secretName,
+    });
+
+    new cdk.CfnOutput(this, "WidgetGatewaySecretArn", {
+      value: this.widgetKeySecret.secretArn,
+    });
+
+    new cdk.CfnOutput(this, "WidgetGatewayApiKeyId", {
+      value: this.widgetApiKey.apiKeyRef.apiKeyId,
     });
   }
 }
