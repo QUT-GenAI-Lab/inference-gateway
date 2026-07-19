@@ -40,6 +40,14 @@ route.openapi(
           },
         },
       },
+      503: {
+        description: "Service Unavailable - SageMaker endpoint not ready",
+        content: {
+          "application/json": {
+            schema: ApiErrorSchema,
+          },
+        },
+      },
     },
   }),
   async (c) => {
@@ -50,6 +58,20 @@ route.openapi(
     }
 
     try {
+      const isReady = await provider.isReady();
+      if (!isReady) {
+        return c.json(
+          {
+            error: {
+              code: "PROVIDER_NOT_READY",
+              message:
+                "SageMaker endpoint is not ready. Please try again later.",
+            },
+          },
+          503,
+        );
+      }
+
       const output = await provider.predictNextToken(input);
       return c.json(output, 200);
     } catch (error) {

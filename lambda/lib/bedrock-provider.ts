@@ -10,6 +10,11 @@ const client = new BedrockRuntimeClient({
 });
 
 export class BedrockProvider implements GenerateChatProvider {
+  async isReady(): Promise<boolean> {
+    // We assume Bedrock is always ready since it is a managed service.
+    return true;
+  }
+
   async generateChat(
     input: z.infer<typeof GenerateChatSchema.input>,
   ): Promise<z.infer<typeof GenerateChatSchema.output>> {

@@ -66,6 +66,8 @@ def input_fn(request_body: str | bytes, content_type: str) -> dict[str, Any]:
         else request_body
     )
     payload = json.loads(body or "{}")
+    if payload.get("healthCheck"):
+        return {"healthCheck": True}
     text = str(payload.get("text", ""))[:MAX_TEXT_LENGTH]
 
     return {
@@ -75,6 +77,9 @@ def input_fn(request_body: str | bytes, content_type: str) -> dict[str, Any]:
 
 
 def predict_fn(data: dict[str, Any], model_context: dict[str, Any]) -> dict[str, Any]:
+    if data.get("healthCheck"):
+        return {"status": "ok"}
+
     text = str(data["text"])
     if not text.strip():
         return {"tokens": []}

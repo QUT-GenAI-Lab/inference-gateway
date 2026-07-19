@@ -10,6 +10,7 @@ export interface SageMakerServerlessEndpointProps {
   modelArtifactBucket: s3.IBucket;
   serverlessMemorySizeInMb: number;
   serverlessMaxConcurrency: number;
+  serverlessProvisionedConcurrency?: number;
   containerEnvironment: Record<string, string>;
 }
 
@@ -70,6 +71,7 @@ export class SageMakerServerlessEndpoint extends Construct {
             serverlessConfig: {
               maxConcurrency: props.serverlessMaxConcurrency,
               memorySizeInMb: props.serverlessMemorySizeInMb,
+              provisionedConcurrency: props.serverlessProvisionedConcurrency,
             },
           },
         ],

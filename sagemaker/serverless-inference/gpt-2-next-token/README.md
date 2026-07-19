@@ -109,7 +109,7 @@ The CDK stack creates:
 - a SageMaker model using the packaged GPT-2 artifact,
 - a Serverless Inference endpoint configuration,
 - a SageMaker endpoint named `gpt-2-next-token`,
-- Lambda environment variable `SAGEMAKER_ENDPOINT_NAME`,
+- Lambda environment variable `SAGEMAKER_GPT_2_ENDPOINT_NAME`,
 - Lambda permission for `sagemaker:InvokeEndpoint` on that endpoint.
 
 The endpoint is built by the `SageMakerServerlessEndpoint` construct in `lib/constructs/sagemaker-serverless-endpoint.ts`; the stack passes the GPT-2-specific settings into that construct. Default serverless settings are `6144 MB` memory and max concurrency `10`.
@@ -118,8 +118,7 @@ The Hugging Face PyTorch inference image is selected from the `HF_INFERENCE_IMAG
 
 ## Remaining Configuration Values
 
-- `SAGEMAKER_ENDPOINT_NAME`: set automatically by CDK from the GPT-2 SageMaker construct. Developers should not set it manually.
+- `SAGEMAKER_GPT_2_ENDPOINT_NAME`: set automatically by CDK from the GPT-2 SageMaker construct. Developers should not set it manually.
 - `GATEWAY_URL`: use `https://inference.genai-arcade.net` for the deployed gateway, or use the stack outputs `ApiGatewayDefaultUrl` / `CustomDomainName` for non-default environments.
-- `GATEWAY_API_KEY`: retrieve the key value from API Gateway using the stack `ApiKeyId` output, the API Gateway API Keys console, or `aws apigateway get-api-key --api-key <api-key-id> --include-value`.
 - `SAGEMAKER_MODELS_BUCKET`: optional override for the `model:upload` script. Defaults to `genai-arcade-sagemaker-models`.
 - AWS credentials, account, and region: use the normal AWS CLI/CDK profile and environment for the target development, staging, or production account.

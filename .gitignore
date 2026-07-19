@@ -15,4 +15,7 @@ swagger.json
 *.safetensors
 *.model
 *.tar.gz
+*.jinja
 sagemaker/**/model/*.json
+
+__pycache__

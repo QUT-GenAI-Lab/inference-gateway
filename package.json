@@ -8,7 +8,7 @@
     "cdk": "cdk",
     "openapi": "tsx scripts/generate-openapi.ts",
     "predeploy": "npm run openapi",
-    "deploy": "cdk deploy -v --progress bar --require-approval any-change",
+    "deploy": "cdk deploy -v --progress bar",
     "model:download": "cross-env-shell python $INIT_CWD/download.py",
     "model:package": "cross-env-shell tar -czf $INIT_CWD/model.tar.gz -C $INIT_CWD/model .",
     "model:upload": "tsx scripts/upload-model-artifact.ts"

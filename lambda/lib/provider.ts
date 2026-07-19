@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GENERATE_CHAT_PROVIDER_NAMES } from "./provider-router";
 
 export const NEXT_TOKEN_MIN_TOP_K = 1;
 export const NEXT_TOKEN_DEFAULT_TOP_K = 10;
@@ -32,12 +33,7 @@ export const GenerateChatSchema = {
       example: "You are a helpful assistant that provides concise answers.",
     }),
     model: z
-      .enum([
-        "amazon.nova-micro-v1:0",
-        "google.gemma-3-4b-it",
-        "openai.gpt-oss-20b-1:0",
-        "deepseek.v3-v1:0",
-      ])
+      .enum(GENERATE_CHAT_PROVIDER_NAMES)
       .default("amazon.nova-micro-v1:0")
       .openapi({
         description: "The Bedrock model to use for generating the response.",
@@ -155,13 +151,17 @@ export function normalizeNextTokenInput(
   };
 }
 
-export interface GenerateChatProvider {
+interface BaseProvider {
+  isReady(): Promise<boolean>;
+}
+
+export interface GenerateChatProvider extends BaseProvider {
   generateChat(
     input: z.infer<typeof GenerateChatSchema.input>,
   ): Promise<z.infer<typeof GenerateChatSchema.output>>;
 }
 
-export interface NextTokenProvider {
+export interface NextTokenProvider extends BaseProvider {
   predictNextToken(
     input: z.infer<typeof NextTokenSchema.input> & { top_k: number },
   ): Promise<z.infer<typeof NextTokenSchema.output>>;

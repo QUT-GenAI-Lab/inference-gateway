@@ -12,15 +12,36 @@ const client = new SageMakerRuntimeClient({
 export class SageMakerGpt2Provider implements NextTokenProvider {
   private readonly endpointName?: string;
 
-  constructor(endpointName = process.env.SAGEMAKER_ENDPOINT_NAME) {
+  constructor(endpointName = process.env.SAGEMAKER_GPT_2_ENDPOINT_NAME) {
     this.endpointName = endpointName;
+  }
+
+  async isReady(): Promise<boolean> {
+    if (!this.endpointName) {
+      throw new Error("SAGEMAKER_GPT_2_ENDPOINT_NAME is required.");
+    }
+
+    try {
+      await client.send(
+        new InvokeEndpointCommand({
+          EndpointName: this.endpointName,
+          ContentType: "application/json",
+          Accept: "application/json",
+          Body: Buffer.from(JSON.stringify({ healthCheck: true })),
+        }),
+      );
+      return true;
+    } catch (error) {
+      console.error("Error checking SageMaker GPT-2 endpoint readiness:", error);
+      return false;
+    }
   }
 
   async predictNextToken(
     input: z.infer<typeof NextTokenSchema.input> & { top_k: number },
   ): Promise<z.infer<typeof NextTokenSchema.output>> {
     if (!this.endpointName) {
-      throw new Error("SAGEMAKER_ENDPOINT_NAME is required.");
+      throw new Error("SAGEMAKER_GPT_2_ENDPOINT_NAME is required.");
     }
 
     const response = await client.send(
