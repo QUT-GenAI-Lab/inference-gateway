@@ -13,7 +13,7 @@ function getInvocationDirectory(): string {
   return process.env.INIT_CWD ?? process.cwd();
 }
 
-function getS3KeyFromDirectory(directory: string): string {
+function getS3PrefixFromDirectory(directory: string): string {
   const parts = path.resolve(directory).split(path.sep);
   const sagemakerIndex = parts.lastIndexOf(SAGEMAKER_DIRECTORY);
 
@@ -26,14 +26,16 @@ function getS3KeyFromDirectory(directory: string): string {
   const keyParts = parts.slice(sagemakerIndex + 1);
 
   if (keyParts.length === 0) {
-    throw new Error(`Could not derive an S3 key from directory: ${directory}`);
+    throw new Error(
+      `Could not derive an S3 prefix from directory: ${directory}`,
+    );
   }
 
-  return normaliseToS3Path(path.join(...keyParts, "model.tar.gz"));
+  return `${normaliseToS3Path(path.join(...keyParts, "uncompressed"))}/`;
 }
 
-function uploadToS3(localFilePath: string, s3Uri: string): void {
-  const result = spawnSync("aws", ["s3", "cp", localFilePath, s3Uri], {
+function uploadToS3(localDirectory: string, s3Uri: string): void {
+  const result = spawnSync("aws", ["s3", "sync", localDirectory, s3Uri], {
     stdio: "inherit",
     shell: process.platform === "win32",
   });
@@ -43,7 +45,7 @@ function uploadToS3(localFilePath: string, s3Uri: string): void {
   }
 
   if (result.status !== 0) {
-    throw new Error(`aws s3 cp failed with exit code ${result.status}`);
+    throw new Error(`aws s3 sync failed with exit code ${result.status}`);
   }
 }
 
@@ -51,14 +53,14 @@ function main(): void {
   const bucket =
     process.env.SAGEMAKER_MODELS_BUCKET ?? MODEL_ARTIFACT_BUCKET_NAME;
   const invocationDirectory = getInvocationDirectory();
-  const modelPath = path.join(invocationDirectory, "model.tar.gz");
+  const modelPath = path.join(invocationDirectory, "model");
 
   if (!existsSync(modelPath)) {
-    throw new Error(`Model artifact not found: ${modelPath}`);
+    throw new Error(`Model artifact directory not found: ${modelPath}`);
   }
 
-  const s3Key = getS3KeyFromDirectory(invocationDirectory);
-  const s3Uri = `s3://${bucket}/${s3Key}`;
+  const s3Prefix = getS3PrefixFromDirectory(invocationDirectory);
+  const s3Uri = `s3://${bucket}/${s3Prefix}`;
 
   console.log(`Uploading ${modelPath}`);
   console.log(`Destination: ${s3Uri}`);

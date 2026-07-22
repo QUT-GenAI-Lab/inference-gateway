@@ -323,13 +323,13 @@ export class SageMakerRealtimeEndpoint extends Construct {
     this.inferenceComponentName = `${props.endpointName}-inference-component`;
 
     this.modelArtifactBucket = props.modelArtifactBucket;
-    this.modelArtifactKey = `realtime-inference/${props.endpointName}/model.tar.gz`;
+    // Use uncompressed model artifacts to reduce decompression time on endpoint startup,
+    // and to allow partial uploads of model artifacts like inference.py
+    this.modelArtifactKey = `realtime-inference/${props.endpointName}/uncompressed/`;
     this.modelArtifactUrl = this.modelArtifactBucket.s3UrlForObject(
       this.modelArtifactKey,
     );
-
     this.endpointArn = `arn:${cdk.Aws.PARTITION}:sagemaker:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:endpoint/${this.endpointName}`;
-
     this.inferenceComponentArn = `arn:${cdk.Aws.PARTITION}:sagemaker:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:inference-component/${this.inferenceComponentName}`;
 
     const appliedProps = { ...DEFAULT_PROPS, ...props };
@@ -360,7 +360,7 @@ export class SageMakerRealtimeEndpoint extends Construct {
     /**
      * SageMaker Model object.
      *
-     * This still points to your container image and model.tar.gz, but unlike
+     * This still points to your container image and S3 model artifact prefix, but unlike
      * the non-inference-component deployment style, this model is NOT attached
      * directly to the EndpointConfig production variant.
      */
@@ -368,8 +368,15 @@ export class SageMakerRealtimeEndpoint extends Construct {
       executionRoleArn: sageMakerRole.roleArn,
       primaryContainer: {
         image: props.imageUri,
-        modelDataUrl: this.modelArtifactUrl,
         environment: props.containerEnvironment,
+        // Point directly to an S3 folder prefix instead of a tar.gz file
+        modelDataSource: {
+          s3DataSource: {
+            s3Uri: this.modelArtifactUrl,
+            s3DataType: "S3Prefix",
+            compressionType: "None",
+          },
+        },
       },
     });
 
