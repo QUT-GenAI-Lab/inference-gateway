@@ -2,7 +2,7 @@ import json
 from typing import Any
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
 CONTENT_TYPE_JSON = "application/json"
 DEFAULT_MAX_NEW_TOKENS = 512
@@ -10,6 +10,20 @@ MAX_INPUT_TOKENS = 512
 MAX_NEW_TOKENS = 512
 MAX_TEXT_LENGTH = 4000
 VALID_MESSAGE_ROLES = {"user", "assistant"}
+STOP_MARKERS = [
+    "\n\nHuman:",
+    "\n\nUser:",
+    "\n\nQuestion:",
+    "\n\nQ:",
+    "\n\nA:",
+    "\nHuman:",
+    "\nUser:",
+    "Human:",
+    "User:",
+    "Question:",
+    "###",
+    "Answer:",
+]
 
 
 def _normalise_messages(value: Any) -> list[dict[str, str]]:
@@ -57,27 +71,13 @@ def _clean_response(response_text: str, original_prompt: str) -> str:
         response_text = response_text.replace(original_prompt, "").strip()
 
     # Split by common conversation markers and take first part
-    stop_markers = [
-        "\n\nHuman:",
-        "\n\nUser:",
-        "\n\nQuestion:",
-        "\n\nQ:",
-        "\n\nA:",
-        "\nHuman:",
-        "\nUser:",
-        "Human:",
-        "User:",
-        "Question:",
-        "###",
-        "Answer:",
-    ]
-
-    for marker in stop_markers:
+    for marker in STOP_MARKERS:
         if marker in response_text:
             response_text = response_text.split(marker)[0].strip()
             break
 
     # Remove repetitive patterns (simple heuristic)
+    # by splitting the response into lines and removing duplicates while preserving order
     lines = response_text.split("\n")
     cleaned_lines = []
     seen_lines = set()
@@ -87,6 +87,7 @@ def _clean_response(response_text: str, original_prompt: str) -> str:
         if line and line not in seen_lines:
             cleaned_lines.append(line)
             seen_lines.add(line)
+        # If we encounter a line we've seen before, the model might be looping
         elif line in seen_lines:
             break
 
@@ -184,8 +185,20 @@ def predict_fn(data: dict[str, Any], model_context: dict[str, Any]) -> dict[str,
         padding=False,
     ).to(device)
 
+    # Pass the stop strings to allow appropriate early stopping during generation and prevent the model from looping.
+    # When generating with stop strings, you must pass the model's tokenizer to the `tokenizer` argument of `generate`
+    early_stop_kwargs = {
+        "stop_strings": STOP_MARKERS,
+        "tokenizer": tokenizer,
+        "eos_token_id": tokenizer.eos_token_id,
+        "pad_token_id": tokenizer.pad_token_id,
+        "use_cache": True,
+    }
+
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS)
+        outputs = model.generate(
+            **inputs, max_new_tokens=MAX_NEW_TOKENS, **early_stop_kwargs
+        )
 
     response_tokens = outputs[0][inputs["input_ids"].shape[1] :]
     content = tokenizer.decode(response_tokens, skip_special_tokens=True)
