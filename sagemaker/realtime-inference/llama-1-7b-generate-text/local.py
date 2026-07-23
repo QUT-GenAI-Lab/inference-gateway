@@ -1,7 +1,15 @@
-import json
-from model.code.inference import model_fn, input_fn, predict_fn, output_fn
-import subprocess
 import os
+import sys
+import subprocess
+import json
+
+# Ensure the directory containing inference.py is in sys.path so imports in inference.py work correctly
+current_dir = os.path.dirname(os.path.abspath(__file__))
+code_dir = os.path.join(current_dir, "model", "code")
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+from model.code.inference import model_fn, input_fn, predict_fn, output_fn  # noqa: E402
 
 COMMANDS = {
     "/help": "Show this help message.",

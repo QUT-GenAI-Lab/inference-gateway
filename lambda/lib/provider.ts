@@ -1,34 +1,164 @@
 import { z } from "zod";
 import { GENERATE_CHAT_PROVIDER_NAMES } from "./provider-router";
+import { PreprocessorBuilder } from "./utils/preprocessors";
 
 export const NEXT_TOKEN_MIN_TOP_K = 1;
 export const NEXT_TOKEN_DEFAULT_TOP_K = 10;
 export const NEXT_TOKEN_MAX_TOP_K = 50;
 export const NEXT_TOKEN_MAX_TEXT_LENGTH = 2000;
 
-/**
- * Preprocesses a value that may be a JSON string in the form of [jsonString, 'application/json'].
- * If the value is in this format, it attempts to parse the JSON string and return the resulting object.
- * If parsing fails, or if the value is not in this format, it returns the original value.
- * @param value
- * @returns
- */
-function preprocessJsonString(value: unknown): unknown {
-  if (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    typeof value[0] === "string" &&
-    value[1] === "application/json"
-  ) {
-    try {
-      return JSON.parse(value[0]);
-    } catch {
-      return value;
-    }
-  }
+const sagemakerResponsePreprocessor = new PreprocessorBuilder()
+  .parseJsonTuple()
+  .normaliseEcoMetricsResponse()
+  .build();
 
-  return value;
-}
+const EmissionsDataSchema = z.object({
+  timestamp: z.string().openapi({
+    description:
+      "The exact timestamp marking when the tracking session ended or data was recorded (UTC, ISO 8601).",
+  }),
+  project_name: z.string(),
+  run_id: z.string(),
+  experiment_id: z.string(),
+  duration: z.number().openapi({
+    description:
+      "The total active runtime duration of the tracked block of code, in seconds.",
+  }),
+  emissions: z.number().openapi({
+    description:
+      "The total estimated carbon dioxide equivalent emitted during the session, in kilograms (kg CO₂eq).",
+  }),
+  emissions_rate: z.number().openapi({
+    description:
+      "The rate of carbon emissions produced per second, in kilograms per second (kg/s).",
+  }),
+  cpu_power: z.number().openapi({
+    description:
+      "The average or real-time power draw of the CPU(s), in watts (W).",
+  }),
+  gpu_power: z.number().openapi({
+    description:
+      "The average or real-time power draw of the GPU(s), in watts (W).",
+  }),
+  ram_power: z.number().openapi({
+    description:
+      "The estimated power draw of the system memory (RAM), in watts (W).",
+  }),
+  cpu_energy: z.number().openapi({
+    description:
+      "The specific portion of electrical energy consumed exclusively by the CPU(s), in kilowatt-hours (kWh).",
+  }),
+  gpu_energy: z.number().openapi({
+    description:
+      "The specific portion of electrical energy consumed exclusively by the GPU(s) (if present), in kilowatt-hours (kWh).",
+  }),
+  ram_energy: z.number().openapi({
+    description:
+      "The estimated portion of electrical energy consumed by the system's RAM, in kilowatt-hours (kWh).",
+  }),
+  energy_consumed: z.number().openapi({
+    description:
+      "The total electrical energy consumed by all tracked hardware components combined, in kilowatt-hours (kWh).",
+  }),
+  water_consumed: z.number().openapi({
+    description:
+      "The estimated volume of water used for cooling and other data center operations during the tracking session, in liters (L).",
+  }),
+  country_name: z.string().openapi({
+    description:
+      "The country name associated with the electricity grid configuration or geolocation.",
+  }),
+  country_iso_code: z.string().openapi({
+    description:
+      "The ISO 3166-1 alpha-3 country code (e.g., AUS, USA) used to fetch grid data.",
+  }),
+  region: z.string().openapi({
+    description:
+      "The sub-national region or cloud provider zone specified (if applicable).",
+  }),
+  cloud_provider: z.string().openapi({
+    description:
+      "The name of the cloud service provider if running on a cloud instance (e.g., aws), or blank if local.",
+  }),
+  cloud_region: z.string().openapi({
+    description: "The specific data center region of the cloud provider.",
+  }),
+  carbon_intensity: z.number().openapi({
+    description:
+      "The carbon intensity factor of the local electricity grid at that location, in grams per kilowatt-hour (g CO2eq/kWh).",
+  }),
+  os: z.string().openapi({
+    description: "The operating system running the hardware during tracking.",
+  }),
+  python_version: z.string().openapi({
+    description: "The version of Python being used during execution.",
+  }),
+  codecarbon_version: z.string().openapi({
+    description:
+      "The version of the CodeCarbon library used to generate the data.",
+  }),
+  cpu_count: z.number().openapi({
+    description: "The total number of CPU cores available or utilized.",
+  }),
+  cpu_model: z.string().openapi({
+    description: "The specific hardware model name of the CPU.",
+  }),
+  gpu_count: z.number().openapi({
+    description: "The total number of available GPU units.",
+  }),
+  gpu_model: z.string().openapi({
+    description: "The specific hardware model name of the GPU(s), if present.",
+  }),
+  longitude: z.number().openapi({
+    description:
+      "The geographic longitude coordinate used for grid carbon intensity lookup.",
+  }),
+  latitude: z.number().openapi({
+    description:
+      "The geographic latitude coordinate used for grid carbon intensity lookup.",
+  }),
+  ram_total_size: z.number().openapi({
+    description: "The total system RAM capacity, in gigabytes (GB).",
+  }),
+  tracking_mode: z.string().openapi({
+    description:
+      "The mode used by CodeCarbon for hardware power tracking (e.g., process, machine).",
+  }),
+  cpu_utilization_percent: z.number().openapi({
+    description:
+      "The percentage of CPU utilization during the tracking session.",
+  }),
+  gpu_utilization_percent: z.number().openapi({
+    description:
+      "The percentage of GPU utilization during the tracking session.",
+  }),
+  ram_utilization_percent: z.number().openapi({
+    description:
+      "The percentage of system RAM utilization during the tracking session.",
+  }),
+  ram_used_gb: z.number().openapi({
+    description: "The amount of system RAM currently used, in gigabytes (GB).",
+  }),
+  on_cloud: z.string().openapi({
+    description:
+      "Indicates whether the workload is running on a cloud instance (typically 'Y' or 'N').",
+  }),
+  pue: z.number().openapi({
+    description:
+      "The Power Usage Effectiveness (PUE) factor applied for data center energy efficiency overhead.",
+  }),
+  wue: z.number().openapi({
+    description:
+      "The Water Usage Effectiveness (WUE) factor applied for data center water usage estimation.",
+  }),
+});
+
+const EcoMetricsSchema = z.object({
+  co2_emissions_grams: z.number(),
+  energy_consumed_kwh: z.number(),
+  water_consumed_liters: z.number(),
+  detailed_emissions: EmissionsDataSchema,
+});
 
 export const GenerateChatSchema = {
   input: z.object({
@@ -56,6 +186,11 @@ export const GenerateChatSchema = {
         "Optional system instructions to guide the model's behavior.",
       example: "You are a helpful assistant that provides concise answers.",
     }),
+    includeEcoMetrics: z.boolean().default(false).openapi({
+      description:
+        "Whether to include inference energy, water, and emissions metrics in the response when supported by the provider.",
+      example: false,
+    }),
     model: z
       .enum(GENERATE_CHAT_PROVIDER_NAMES)
       .default("amazon.nova-micro-v1:0")
@@ -65,9 +200,10 @@ export const GenerateChatSchema = {
   }),
   output: z
     .preprocess(
-      preprocessJsonString,
+      sagemakerResponsePreprocessor,
       z.object({
         content: z.string(),
+        ecoMetrics: EcoMetricsSchema.optional(),
       }),
     )
     .openapi({
@@ -92,7 +228,7 @@ export const NextTokenSchema = {
   }),
   output: z
     .preprocess(
-      preprocessJsonString,
+      sagemakerResponsePreprocessor,
       z.object({
         tokens: z.array(
           z.object({

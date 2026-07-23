@@ -8,6 +8,13 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { SageMakerServerlessEndpoint } from "./constructs/sagemaker-serverless-endpoint";
 import { SageMakerRealtimeEndpoint } from "./constructs/sagemaker-real-time-endpoint";
 
+// REVIEW: Move all sagemaker-related constants and definition to a separate file (inference-gateway\lib\sagemaker-endpoints.ts)
+// for better organisation. This should include:
+// - The constants below
+// - The SageMakerRealtimeEndpoint and SageMakerServerlessEndpoint constructs, as well as their constructs
+// - The new construct should have a central "grantInvoke" method that can be used to grant invoke permissions to the Lambda function, instead of having to call grantInvoke on each endpoint separately.
+// - No need to use environment variables to pass the endpoint names to the Lambda function. Instead, hardcode the endpoint names in inference-gateway\lambda\lib\provider-router.ts and inference-gateway\lambda\lib\sagemaker-gpt2-provider.ts
+
 export const MODEL_ARTIFACT_BUCKET_NAME = "genai-arcade-sagemaker-models";
 
 // Reference: https://aws.github.io/deep-learning-containers/reference/available_images/#huggingface-pytorch-inference

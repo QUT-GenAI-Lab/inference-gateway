@@ -66,7 +66,11 @@ class SageMakerGenerateChatProvider implements GenerateChatProvider {
         ContentType: "application/json",
         Accept: "application/json",
         Body: Buffer.from(
-          JSON.stringify({ messages: input.messages, system: input.system }),
+          JSON.stringify({
+            messages: input.messages,
+            system: input.system,
+            includeEcoMetrics: input.includeEcoMetrics,
+          }),
         ),
       }),
     );

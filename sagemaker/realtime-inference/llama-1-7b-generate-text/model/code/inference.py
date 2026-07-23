@@ -2,10 +2,10 @@ import json
 from typing import Any
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from emissions_tracker import track_emissions
 
 CONTENT_TYPE_JSON = "application/json"
-DEFAULT_MAX_NEW_TOKENS = 512
 MAX_INPUT_TOKENS = 512
 MAX_NEW_TOKENS = 512
 MAX_TEXT_LENGTH = 4000
@@ -148,12 +148,15 @@ def input_fn(request_body: str | bytes, content_type: str) -> dict[str, Any]:
 
     system = payload.get("system")
     print(f"System message: {system}")
+    include_eco_metrics = payload.get("includeEcoMetrics", False)
     return {
         "messages": _normalise_messages(payload.get("messages")),
         "system": str(system)[:MAX_TEXT_LENGTH] if system is not None else None,
+        "include_eco_metrics": include_eco_metrics,
     }
 
 
+@track_emissions
 def predict_fn(data: dict[str, Any], model_context: dict[str, Any]) -> dict[str, Any]:
     if data.get("healthCheck"):
         return {"status": "ok"}
@@ -163,6 +166,7 @@ def predict_fn(data: dict[str, Any], model_context: dict[str, Any]) -> dict[str,
 
     print(f"Messages: {messages}")
     print(f"System: {system}")
+    print(f"Include Eco Metrics: {data.get('include_eco_metrics')}")
 
     # Skip generation if no messages have content
     if not any(message["content"].strip() for message in messages):

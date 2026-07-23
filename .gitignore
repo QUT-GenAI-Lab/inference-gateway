@@ -19,3 +19,6 @@ swagger.json
 sagemaker/**/model/*.json
 
 __pycache__
+
+# CodeCarbon emissions tracking
+emissions.csv
