@@ -1,73 +1,26 @@
+import { main as uploadRealtimeArtifact } from "./upload-helpers/upload-realtime-artifact";
+import { main as uploadServerlessArtifact } from "./upload-helpers/upload-serverless-artifact";
+
 import { existsSync } from "node:fs";
-import path from "node:path";
-import { spawnSync } from "node:child_process";
-import { MODEL_ARTIFACT_BUCKET_NAME } from "../lib/inference-gateway-stack";
-
-const SAGEMAKER_DIRECTORY = "sagemaker";
-
-function normaliseToS3Path(value: string): string {
-  return value.split(path.sep).join("/");
-}
-
-function getInvocationDirectory(): string {
-  return process.env.INIT_CWD ?? process.cwd();
-}
-
-function getS3PrefixFromDirectory(directory: string): string {
-  const parts = path.resolve(directory).split(path.sep);
-  const sagemakerIndex = parts.lastIndexOf(SAGEMAKER_DIRECTORY);
-
-  if (sagemakerIndex === -1) {
-    throw new Error(
-      `Expected the command to be run from a directory under "${SAGEMAKER_DIRECTORY}". Received: ${directory}`,
-    );
-  }
-
-  const keyParts = parts.slice(sagemakerIndex + 1);
-
-  if (keyParts.length === 0) {
-    throw new Error(
-      `Could not derive an S3 prefix from directory: ${directory}`,
-    );
-  }
-
-  return `${normaliseToS3Path(path.join(...keyParts, "uncompressed"))}/`;
-}
-
-function uploadToS3(localDirectory: string, s3Uri: string): void {
-  const result = spawnSync("aws", ["s3", "sync", localDirectory, s3Uri], {
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    throw new Error(`aws s3 sync failed with exit code ${result.status}`);
-  }
-}
 
 function main(): void {
-  const bucket =
-    process.env.SAGEMAKER_MODELS_BUCKET ?? MODEL_ARTIFACT_BUCKET_NAME;
-  const invocationDirectory = getInvocationDirectory();
-  const modelPath = path.join(invocationDirectory, "model");
+  // Determine whether the model artifact is a directory (for real-time inference) or a file (for serverless inference)
+  const modelPath = process.env.INIT_CWD ?? process.cwd();
 
   if (!existsSync(modelPath)) {
-    throw new Error(`Model artifact directory not found: ${modelPath}`);
+    throw new Error(`Model artifact not found: ${modelPath}`);
   }
 
-  const s3Prefix = getS3PrefixFromDirectory(invocationDirectory);
-  const s3Uri = `s3://${bucket}/${s3Prefix}`;
-
-  console.log(`Uploading ${modelPath}`);
-  console.log(`Destination: ${s3Uri}`);
-
-  uploadToS3(modelPath, s3Uri);
-
-  console.log("Upload complete.");
+  // Check if the path has realtime-inference, or serverless-inference in its path to determine which upload function to call
+  if (modelPath.includes("realtime-inference")) {
+    uploadRealtimeArtifact();
+  } else if (modelPath.includes("serverless-inference")) {
+    uploadServerlessArtifact();
+  } else {
+    throw new Error(
+      `Could not determine inference type from model path: ${modelPath}`,
+    );
+  }
 }
 
 main();

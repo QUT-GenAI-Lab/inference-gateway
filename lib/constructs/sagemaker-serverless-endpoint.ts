@@ -30,7 +30,8 @@ export class SageMakerServerlessEndpoint extends Construct {
 
     this.endpointName = props.endpointName;
     this.modelArtifactBucket = props.modelArtifactBucket;
-    this.modelArtifactKey = `serverless-inference/${props.endpointName}/uncompressed/`;
+    // Serverless endpoints doesn't support uncompressed model artifacts, so need to use a tar.gz file for the model artifact key
+    this.modelArtifactKey = `serverless-inference/${props.endpointName}/model.tar.gz`;
     this.modelArtifactUrl = this.modelArtifactBucket.s3UrlForObject(
       this.modelArtifactKey,
     );
@@ -52,13 +53,7 @@ export class SageMakerServerlessEndpoint extends Construct {
       executionRoleArn: sageMakerRole.roleArn,
       primaryContainer: {
         image: props.imageUri,
-        modelDataSource: {
-          s3DataSource: {
-            s3Uri: this.modelArtifactUrl,
-            s3DataType: "S3Prefix",
-            compressionType: "None",
-          },
-        },
+        modelDataUrl: this.modelArtifactUrl,
         environment: props.containerEnvironment,
       },
     });
