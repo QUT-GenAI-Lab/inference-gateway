@@ -293,7 +293,8 @@ function applyStepScalingOutFromZeroAlarm(
     metricName: "NoCapacityInvocationFailures",
     namespace: "AWS/SageMaker",
 
-    period: 60,
+    // Use a short period to scale out quickly from zero.
+    period: 10,
     statistic: "Sum",
     threshold: 1,
   });

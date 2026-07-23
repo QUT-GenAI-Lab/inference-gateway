@@ -6,6 +6,30 @@ export const NEXT_TOKEN_DEFAULT_TOP_K = 10;
 export const NEXT_TOKEN_MAX_TOP_K = 50;
 export const NEXT_TOKEN_MAX_TEXT_LENGTH = 2000;
 
+/**
+ * Preprocesses a value that may be a JSON string in the form of [jsonString, 'application/json'].
+ * If the value is in this format, it attempts to parse the JSON string and return the resulting object.
+ * If parsing fails, or if the value is not in this format, it returns the original value.
+ * @param value
+ * @returns
+ */
+function preprocessJsonString(value: unknown): unknown {
+  if (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === "string" &&
+    value[1] === "application/json"
+  ) {
+    try {
+      return JSON.parse(value[0]);
+    } catch {
+      return value;
+    }
+  }
+
+  return value;
+}
+
 export const GenerateChatSchema = {
   input: z.object({
     messages: z
@@ -40,9 +64,12 @@ export const GenerateChatSchema = {
       }),
   }),
   output: z
-    .object({
-      content: z.string(),
-    })
+    .preprocess(
+      preprocessJsonString,
+      z.object({
+        content: z.string(),
+      }),
+    )
     .openapi({
       description: "The generated response from the model.",
       example: {
@@ -65,22 +92,7 @@ export const NextTokenSchema = {
   }),
   output: z
     .preprocess(
-      (value) => {
-        if (
-          Array.isArray(value) &&
-          value.length === 2 &&
-          typeof value[0] === "string" &&
-          value[1] === "application/json"
-        ) {
-          try {
-            return JSON.parse(value[0]);
-          } catch {
-            return value;
-          }
-        }
-
-        return value;
-      },
+      preprocessJsonString,
       z.object({
         tokens: z.array(
           z.object({
