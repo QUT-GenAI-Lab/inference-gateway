@@ -10,7 +10,7 @@ const GENERATE_CHAT_PROVIDERS: Record<string, new () => GenerateChatProvider> =
     "openai.gpt-oss-20b-1:0": BedrockProvider,
     "deepseek.v3-v1:0": BedrockProvider,
     "meta.llama-1-7b": SageMakerGenerateChatProviderClassFactory(
-      process.env.SAGEMAKER_LLAMA_1_ENDPOINT_NAME,
+      "llama-1-7b-generate-text",
     ),
   } as const satisfies Record<string, new () => GenerateChatProvider>;
 

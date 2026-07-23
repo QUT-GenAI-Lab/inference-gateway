@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { MODEL_ARTIFACT_BUCKET_NAME } from "../../lib/inference-gateway-stack";
+import { MODEL_ARTIFACT_BUCKET_NAME } from "../../lib/sagemaker-endpoints";
 
 const SAGEMAKER_DIRECTORY = "sagemaker";
 const CODE_DIRECTORY = "code";
