@@ -12,6 +12,9 @@ const GENERATE_CHAT_PROVIDERS: Record<string, new () => GenerateChatProvider> =
     "meta.llama-1-7b": SageMakerGenerateChatProviderClassFactory(
       "llama-1-7b-generate-text",
     ),
+    "meta.llama-3.2-3b-instruct": SageMakerGenerateChatProviderClassFactory(
+      "llama-3.2-3b-instruct-generate-text",
+    ),
   } as const satisfies Record<string, new () => GenerateChatProvider>;
 
 export const GENERATE_CHAT_PROVIDER_NAMES = Object.keys(

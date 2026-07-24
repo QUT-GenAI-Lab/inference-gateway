@@ -5,15 +5,25 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { ServingConstruct } from "./constructs/serving-construct";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { SageMakerEndpoints } from "./sagemaker-endpoints";
+import { CustomDockerImagesStack } from "./custom-docker-images";
 
 export class InferenceGatewayStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const customDockerImagesStack = new CustomDockerImagesStack(
+      this,
+      "CustomDockerImagesStack",
+    );
+
     const sageMakerEndpoints = new SageMakerEndpoints(
       this,
       "SageMakerEndpoints",
+      {
+        customDockerImageUris: customDockerImagesStack.imageUrls,
+      },
     );
+    sageMakerEndpoints.node.addDependency(customDockerImagesStack);
 
     const fn = new NodejsFunction(this, "InferenceGatewayFn", {
       entry: "lambda/index.ts",

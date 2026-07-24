@@ -1,0 +1,75 @@
+import os
+import sys
+import subprocess
+import json
+
+# Ensure the directory containing inference.py is in sys.path so imports in inference.py work correctly
+current_dir = os.path.dirname(os.path.abspath(__file__))
+code_dir = os.path.join(current_dir, "model", "code")
+if code_dir not in sys.path:
+    sys.path.insert(0, code_dir)
+
+from model.code.inference import model_fn, input_fn, predict_fn, output_fn  # noqa: E402
+
+COMMANDS = {
+    "/help": "Show this help message.",
+    "/exit": "Exit the program.",
+    "/clear": "Clear the screen.",
+    "/system": "Set the system message.",
+    "/eco": "Toggle eco-metrics tracking for the next response.",
+}
+
+context = model_fn("./model")
+system_message = "You are a helpful assistant."
+track_eco_metrics = False
+
+
+def print_help():
+    print("Available commands:")
+    for command, description in COMMANDS.items():
+        print(f"\t{command}: {description}")
+
+
+def execute_command(command):
+    global track_eco_metrics, system_message
+    if command == "/help":
+        print_help()
+    elif command == "/exit":
+        print("Exiting the program.")
+        exit(0)
+    elif command == "/clear":
+        subprocess.call("cls" if os.name == "nt" else "clear", shell=True)
+    elif command.startswith("/system"):
+        system_message = command[len("/system ") :].strip()
+        print(f"System message updated to: {system_message}")
+    elif command == "/eco":
+        track_eco_metrics = not track_eco_metrics
+        print(f"Eco-metrics tracking is now {'ON' if track_eco_metrics else 'OFF'}.")
+    else:
+        print(f"Unknown command: {command}. Type /help for a list of commands.")
+
+
+def main():
+    while True:
+        print("\nEnter your message (or type /help for commands):")
+        user_input = input("> ").strip()
+
+        if user_input.startswith("/"):
+            execute_command(user_input)
+        else:
+            request = json.dumps(
+                {
+                    "messages": [{"role": "user", "content": user_input}],
+                    "system": system_message,
+                    "includeEcoMetrics": track_eco_metrics,
+                }
+            )
+            data = input_fn(request, "application/json")
+            prediction = predict_fn(data, context)
+            body, content_type = output_fn(prediction, "application/json")
+            print(f"Content-Type: {content_type}")
+            print(f"Response: {body}")
+
+
+if __name__ == "__main__":
+    main()
