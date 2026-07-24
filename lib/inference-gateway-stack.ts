@@ -10,6 +10,11 @@ export class InferenceGatewayStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const sageMakerEndpoints = new SageMakerEndpoints(
+      this,
+      "SageMakerEndpoints",
+    );
+
     const fn = new NodejsFunction(this, "InferenceGatewayFn", {
       entry: "lambda/index.ts",
       handler: "handler",
@@ -17,14 +22,15 @@ export class InferenceGatewayStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(30),
     });
-
-    new ServingConstruct(this, "InferenceGatewayServing", fn);
-
-    const sageMakerEndpoints = new SageMakerEndpoints(
-      this,
-      "SageMakerEndpoints",
-    );
+    fn.node.addDependency(sageMakerEndpoints);
     sageMakerEndpoints.grantInvoke(fn);
+
+    const servingConstruct = new ServingConstruct(
+      this,
+      "InferenceGatewayServing",
+      fn,
+    );
+    servingConstruct.node.addDependency(fn);
 
     // Enable necessary permissions for Bedrock
     fn.addToRolePolicy(

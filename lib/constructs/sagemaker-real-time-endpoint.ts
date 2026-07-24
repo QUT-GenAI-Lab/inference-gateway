@@ -125,7 +125,7 @@ function registerInferenceComponentScalableTarget(
     maxCapacity: number;
   },
 ) {
-  return new applicationautoscaling.CfnScalableTarget(
+  const scalableTarget = new applicationautoscaling.CfnScalableTarget(
     scope,
     "InferenceComponentScalableTarget",
     {
@@ -136,6 +136,7 @@ function registerInferenceComponentScalableTarget(
       maxCapacity: props.maxCapacity,
     },
   );
+  return scalableTarget;
 }
 
 /**
@@ -276,28 +277,33 @@ function applyStepScalingOutFromZeroAlarm(
     stepScalingPolicyArn: string;
   },
 ) {
-  return new cloudwatch.CfnAlarm(scope, "NoCapacityInvocationFailuresAlarm", {
-    alarmActions: [props.stepScalingPolicyArn],
-    alarmDescription:
-      "Alarm when SageMaker inference component endpoint invoked that has 0 instances.",
-    alarmName: `${props.endpointName}-step-scaling-alarm`,
-    comparisonOperator: "GreaterThanOrEqualToThreshold",
-    datapointsToAlarm: 1,
-    dimensions: [
-      {
-        name: "InferenceComponentName",
-        value: inferenceComponentName,
-      },
-    ],
-    evaluationPeriods: 1,
-    metricName: "NoCapacityInvocationFailures",
-    namespace: "AWS/SageMaker",
+  const alarm = new cloudwatch.CfnAlarm(
+    scope,
+    "NoCapacityInvocationFailuresAlarm",
+    {
+      alarmActions: [props.stepScalingPolicyArn],
+      alarmDescription:
+        "Alarm when SageMaker inference component endpoint invoked that has 0 instances.",
+      alarmName: `${props.endpointName}-step-scaling-alarm`,
+      comparisonOperator: "GreaterThanOrEqualToThreshold",
+      datapointsToAlarm: 1,
+      dimensions: [
+        {
+          name: "InferenceComponentName",
+          value: inferenceComponentName,
+        },
+      ],
+      evaluationPeriods: 1,
+      metricName: "NoCapacityInvocationFailures",
+      namespace: "AWS/SageMaker",
 
-    // Use a short period to scale out quickly from zero.
-    period: 10,
-    statistic: "Sum",
-    threshold: 1,
-  });
+      // Use a short period to scale out quickly from zero.
+      period: 10,
+      statistic: "Sum",
+      threshold: 1,
+    },
+  );
+  return alarm;
 }
 
 export class SageMakerRealtimeEndpoint extends Construct {
