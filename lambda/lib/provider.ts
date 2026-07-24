@@ -13,150 +13,150 @@ const sagemakerResponsePreprocessor = new PreprocessorBuilder()
   .build();
 
 const EmissionsDataSchema = z.object({
-  timestamp: z.string().openapi({
+  timestamp: z.string().optional().openapi({
     description:
       "The exact timestamp marking when the tracking session ended or data was recorded (UTC, ISO 8601).",
   }),
-  project_name: z.string(),
-  run_id: z.string(),
-  experiment_id: z.string(),
-  duration: z.number().openapi({
+  project_name: z.string().optional(),
+  run_id: z.string().optional(),
+  experiment_id: z.string().optional(),
+  duration: z.number().optional().openapi({
     description:
       "The total active runtime duration of the tracked block of code, in seconds.",
   }),
-  emissions: z.number().openapi({
+  emissions: z.number().optional().openapi({
     description:
       "The total estimated carbon dioxide equivalent emitted during the session, in kilograms (kg CO₂eq).",
   }),
-  emissions_rate: z.number().openapi({
+  emissions_rate: z.number().optional().openapi({
     description:
       "The rate of carbon emissions produced per second, in kilograms per second (kg/s).",
   }),
-  cpu_power: z.number().openapi({
+  cpu_power: z.number().optional().openapi({
     description:
       "The average or real-time power draw of the CPU(s), in watts (W).",
   }),
-  gpu_power: z.number().openapi({
+  gpu_power: z.number().optional().openapi({
     description:
       "The average or real-time power draw of the GPU(s), in watts (W).",
   }),
-  ram_power: z.number().openapi({
+  ram_power: z.number().optional().openapi({
     description:
       "The estimated power draw of the system memory (RAM), in watts (W).",
   }),
-  cpu_energy: z.number().openapi({
+  cpu_energy: z.number().optional().openapi({
     description:
       "The specific portion of electrical energy consumed exclusively by the CPU(s), in kilowatt-hours (kWh).",
   }),
-  gpu_energy: z.number().openapi({
+  gpu_energy: z.number().optional().openapi({
     description:
       "The specific portion of electrical energy consumed exclusively by the GPU(s) (if present), in kilowatt-hours (kWh).",
   }),
-  ram_energy: z.number().openapi({
+  ram_energy: z.number().optional().openapi({
     description:
       "The estimated portion of electrical energy consumed by the system's RAM, in kilowatt-hours (kWh).",
   }),
-  energy_consumed: z.number().openapi({
+  energy_consumed: z.number().optional().openapi({
     description:
       "The total electrical energy consumed by all tracked hardware components combined, in kilowatt-hours (kWh).",
   }),
-  water_consumed: z.number().openapi({
+  water_consumed: z.number().optional().openapi({
     description:
       "The estimated volume of water used for cooling and other data center operations during the tracking session, in liters (L).",
   }),
-  country_name: z.string().openapi({
+  country_name: z.string().optional().openapi({
     description:
       "The country name associated with the electricity grid configuration or geolocation.",
   }),
-  country_iso_code: z.string().openapi({
+  country_iso_code: z.string().optional().openapi({
     description:
       "The ISO 3166-1 alpha-3 country code (e.g., AUS, USA) used to fetch grid data.",
   }),
-  region: z.string().openapi({
+  region: z.string().optional().openapi({
     description:
       "The sub-national region or cloud provider zone specified (if applicable).",
   }),
-  cloud_provider: z.string().openapi({
+  cloud_provider: z.string().optional().openapi({
     description:
       "The name of the cloud service provider if running on a cloud instance (e.g., aws), or blank if local.",
   }),
-  cloud_region: z.string().openapi({
+  cloud_region: z.string().optional().openapi({
     description: "The specific data center region of the cloud provider.",
   }),
-  carbon_intensity: z.number().openapi({
+  carbon_intensity: z.number().optional().openapi({
     description:
       "The carbon intensity factor of the local electricity grid at that location, in grams per kilowatt-hour (g CO2eq/kWh).",
   }),
-  os: z.string().openapi({
+  os: z.string().optional().openapi({
     description: "The operating system running the hardware during tracking.",
   }),
-  python_version: z.string().openapi({
+  python_version: z.string().optional().openapi({
     description: "The version of Python being used during execution.",
   }),
-  codecarbon_version: z.string().openapi({
+  codecarbon_version: z.string().optional().openapi({
     description:
       "The version of the CodeCarbon library used to generate the data.",
   }),
-  cpu_count: z.number().openapi({
+  cpu_count: z.number().optional().openapi({
     description: "The total number of CPU cores available or utilized.",
   }),
-  cpu_model: z.string().openapi({
+  cpu_model: z.string().optional().openapi({
     description: "The specific hardware model name of the CPU.",
   }),
-  gpu_count: z.number().openapi({
+  gpu_count: z.number().optional().openapi({
     description: "The total number of available GPU units.",
   }),
-  gpu_model: z.string().openapi({
+  gpu_model: z.string().optional().openapi({
     description: "The specific hardware model name of the GPU(s), if present.",
   }),
-  longitude: z.number().openapi({
+  longitude: z.number().optional().openapi({
     description:
       "The geographic longitude coordinate used for grid carbon intensity lookup.",
   }),
-  latitude: z.number().openapi({
+  latitude: z.number().optional().openapi({
     description:
       "The geographic latitude coordinate used for grid carbon intensity lookup.",
   }),
-  ram_total_size: z.number().openapi({
+  ram_total_size: z.number().optional().openapi({
     description: "The total system RAM capacity, in gigabytes (GB).",
   }),
-  tracking_mode: z.string().openapi({
+  tracking_mode: z.string().optional().openapi({
     description:
       "The mode used by CodeCarbon for hardware power tracking (e.g., process, machine).",
   }),
-  cpu_utilization_percent: z.number().openapi({
+  cpu_utilization_percent: z.number().optional().openapi({
     description:
       "The percentage of CPU utilization during the tracking session.",
   }),
-  gpu_utilization_percent: z.number().openapi({
+  gpu_utilization_percent: z.number().optional().openapi({
     description:
       "The percentage of GPU utilization during the tracking session.",
   }),
-  ram_utilization_percent: z.number().openapi({
+  ram_utilization_percent: z.number().optional().openapi({
     description:
       "The percentage of system RAM utilization during the tracking session.",
   }),
-  ram_used_gb: z.number().openapi({
+  ram_used_gb: z.number().optional().openapi({
     description: "The amount of system RAM currently used, in gigabytes (GB).",
   }),
-  on_cloud: z.string().openapi({
+  on_cloud: z.string().optional().openapi({
     description:
       "Indicates whether the workload is running on a cloud instance (typically 'Y' or 'N').",
   }),
-  pue: z.number().openapi({
+  pue: z.number().optional().openapi({
     description:
       "The Power Usage Effectiveness (PUE) factor applied for data center energy efficiency overhead.",
   }),
-  wue: z.number().openapi({
+  wue: z.number().optional().openapi({
     description:
       "The Water Usage Effectiveness (WUE) factor applied for data center water usage estimation.",
   }),
 });
 
 const EcoMetricsSchema = z.object({
-  co2_emissions_grams: z.number(),
-  energy_consumed_kwh: z.number(),
-  water_consumed_liters: z.number(),
+  co2_emissions_grams: z.number().optional(),
+  energy_consumed_kwh: z.number().optional(),
+  water_consumed_liters: z.number().optional(),
   detailed_emissions: EmissionsDataSchema,
 });
 
