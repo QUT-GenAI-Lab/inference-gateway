@@ -78,33 +78,20 @@ export class SageMakerEndpoints extends Construct {
         this,
         "Llama3_2_3bInstructGenerateTextEndpoint",
         {
-          endpointName: "llama-3.2-3b-instruct-generate-text",
+          endpointName: "llama-3-2-3b-instruct-generate-text",
           imageUri:
             props.customDockerImageUris["pytorch-inference-gpu-codecarbon"],
           modelArtifactBucket,
-          // ml.g4dn.xlarge has 1 GPU (T4), 4 vCPUs, and 16 GiB of memory.
-          // The 3B-parameter FP16 weights (~6 GB) plus KV cache and CodeCarbon
-          // sampling happily fit a single T4's 16 GiB VRAM.
           instanceType: "ml.g4dn.xlarge",
           containerEnvironment: {
             SAGEMAKER_PROGRAM: "inference.py",
             SAGEMAKER_SUBMIT_DIRECTORY: "/opt/ml/model/code",
+            // Based on error encountered when running the model:
+            // ValueError: ("You need to define one of the following ['text-generation', 'keypoint-matching', 'any-to-any', ...] or text-to-image as env 'HF_TASK'.", 403)
+            HF_TASK: "text-generation",
           },
-          numberOfAcceleratorDevicesRequired: 1,
-          numberOfCpuCoresRequired: 2,
-          minMemoryRequiredMb: 6 * MB_PER_GB,
-          maxMemoryRequiredMb: 8 * MB_PER_GB,
-          // Keep one warm copy at startup, then scale-to-zero on idle, capped at
-          // one copy total to bound per-endpoint cost on a single-GPU box.
-          initialInstanceCount: 1,
-          minInstanceCount: 0,
-          maxInstanceCount: 1,
-          initialCopyCount: 1,
-          minCopyCount: 0,
-          maxCopyCount: 1,
-          // Single-concurrency-per-copy target ensures queuing kicks off scale
-          // alarms promptly on a single T4 box (latency not throughput focus).
-          targetConcurrentRequestsPerCopy: 1,
+          minMemoryRequiredMb: 4 * MB_PER_GB,
+          maxMemoryRequiredMb: 6 * MB_PER_GB,
         },
       ),
     );

@@ -30,7 +30,7 @@ meta-llama/Llama-3.2-3B-Instruct
 The committed layout contains only the inference code and the download/local runners. Model weights are downloaded into `model/` separately and are **not** committed (the repository `.gitignore` excludes `*.safetensors`, `*.model`, `*.jinja`, and `sagemaker/**/model/*.json`).
 
 ```text
-llama-3.2-3b-instruct-generate-text/
+llama-3-2-3b-instruct-generate-text/
 |- download.py
 |- local.py
 |- README.md
@@ -145,7 +145,7 @@ npm run model:upload
 The upload destination is:
 
 ```text
-s3://genai-arcade-sagemaker-models/realtime-inference/llama-3.2-3b-instruct-generate-text/uncompressed/
+s3://genai-arcade-sagemaker-models/realtime-inference/llama-3-2-3b-instruct-generate-text/uncompressed/
 ```
 
 Then deploy the gateway CDK stack from `inference-gateway/`:
