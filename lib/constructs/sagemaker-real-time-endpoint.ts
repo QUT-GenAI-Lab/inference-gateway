@@ -57,6 +57,12 @@ export interface SageMakerRealtimeEndpointProps {
    * For LLMs, start low, e.g. 2-5.
    */
   targetConcurrentRequestsPerCopy?: number;
+  /**
+   * The number of minutes to keep one copy available after the last invocation.
+   * This helps avoid cold starts at low traffic volumes that would otherwise scale the inference component to zero.
+   * The default is 15 minutes.
+   */
+  keepAliveWindowMinutes?: number;
 
   /**
    * Resource reservation for the inference component.
@@ -95,8 +101,9 @@ const DEFAULT_PROPS = {
   minCopyCount: 0,
   maxCopyCount: 1,
   targetConcurrentRequestsPerCopy: 5,
-  scaleOutCooldownSeconds: 300,
-  scaleInCooldownSeconds: 120,
+  keepAliveWindowMinutes: 15,
+  scaleOutCooldownSeconds: 120,
+  scaleInCooldownSeconds: 300,
 
   numberOfAcceleratorDevicesRequired: 1,
   numberOfCpuCoresRequired: 2,
@@ -198,6 +205,83 @@ function applyTargetTrackingPolicy(
       },
     },
   );
+}
+
+/**
+ * Keep one inference component copy available while the recent-traffic alarm
+ * is active. ExactCapacity provides a floor of one without preventing another
+ * scaling policy from recommending more copies.
+ */
+function applyKeepOneCopyPolicy(
+  scope: Construct,
+  inferenceComponentName: string,
+  props: {
+    cooldown: number;
+  },
+) {
+  return new applicationautoscaling.CfnScalingPolicy(
+    scope,
+    "InferenceComponentKeepOneCopyPolicy",
+    {
+      policyName: `${inferenceComponentName}-keep-one-copy`,
+      policyType: "StepScaling",
+
+      resourceId: `inference-component/${inferenceComponentName}`,
+      serviceNamespace: "sagemaker",
+      scalableDimension: "sagemaker:inference-component:DesiredCopyCount",
+
+      stepScalingPolicyConfiguration: {
+        adjustmentType: "ExactCapacity",
+        metricAggregationType: "Maximum",
+        cooldown: props.cooldown,
+        stepAdjustments: [
+          {
+            metricIntervalLowerBound: 0,
+            scalingAdjustment: 1,
+          },
+        ],
+      },
+    },
+  );
+}
+
+/**
+ * Keep the one-copy floor active when any invocation occurred in the rolling
+ * traffic window. This intentionally competes with the target tracking policy, and the highest recommendation will be used. When traffic stops, the keep-one-copy alarm will clear and the target tracking policy can recommend zero copies.
+ *
+ * Source: https://docs.aws.amazon.com/cli/latest/reference/application-autoscaling/put-scaling-policy.html
+ */
+function applyRecentTrafficKeepOneAlarm(
+  scope: Construct,
+  inferenceComponentName: string,
+  props: {
+    endpointName: string;
+    keepOnePolicyArn: string;
+    recentTrafficWindowMinutes: number;
+  },
+) {
+  return new cloudwatch.CfnAlarm(scope, "RecentTrafficKeepOneCopyAlarm", {
+    alarmName: `${props.endpointName}-recent-traffic-keep-one`,
+    alarmDescription:
+      `Keep one copy while traffic has occurred within the previous ` +
+      `${props.recentTrafficWindowMinutes} minutes.`,
+    alarmActions: [props.keepOnePolicyArn],
+    namespace: "AWS/SageMaker",
+    metricName: "Invocations",
+    dimensions: [
+      {
+        name: "InferenceComponentName",
+        value: inferenceComponentName,
+      },
+    ],
+    statistic: "Sum",
+    period: 60,
+    evaluationPeriods: props.recentTrafficWindowMinutes,
+    datapointsToAlarm: 1,
+    comparisonOperator: "GreaterThanOrEqualToThreshold",
+    threshold: 1,
+    treatMissingData: "notBreaching",
+  });
 }
 
 /**
@@ -498,6 +582,51 @@ export class SageMakerRealtimeEndpoint extends Construct {
       },
     );
     targetTrackingPolicy.node.addDependency(scalableTarget);
+
+    const keepOneCopyPolicy = applyKeepOneCopyPolicy(
+      this,
+      this.inferenceComponentName,
+      {
+        cooldown: 60,
+      },
+    );
+    keepOneCopyPolicy.node.addDependency(scalableTarget);
+
+    const recentTrafficAlarm = applyRecentTrafficKeepOneAlarm(
+      this,
+      this.inferenceComponentName,
+      {
+        endpointName: this.endpointName,
+        keepOnePolicyArn: keepOneCopyPolicy.attrArn,
+        recentTrafficWindowMinutes: appliedProps.keepAliveWindowMinutes,
+      },
+    );
+    recentTrafficAlarm.node.addDependency(keepOneCopyPolicy);
+
+    // const scaleToZeroPolicy = applyScaleToZeroPolicy(
+    //   this,
+    //   this.inferenceComponentName,
+    // );
+    // scaleToZeroPolicy.node.addDependency(scalableTarget);
+
+    // /*
+    //  * The recent-traffic and idle alarms intentionally compete over the same
+    //  * Invocations window. A request keeps the first alarm active and prevents
+    //  * the second alarm from activating. When the traffic stops, the idle alarm
+    //  * clears the one-copy recommendation and activates ExactCapacity 0.
+    //  * Target tracking can still recommend any higher capacity while the
+    //  * ExactCapacity 1 policy is active.
+    //  */
+    // const scaleToZeroAlarm = applyScaleToZeroAlarm(
+    //   this,
+    //   this.inferenceComponentName,
+    //   {
+    //     endpointName: this.endpointName,
+    //     scaleToZeroPolicyArn: scaleToZeroPolicy.attrArn,
+    //     keepAliveWindowMinutes: appliedProps.keepAliveWindowMinutes,
+    //   },
+    // );
+    // scaleToZeroAlarm.node.addDependency(scaleToZeroPolicy);
 
     const scaleOutFromZeroPolicy = applyStepScalingOutFromZeroPolicy(
       this,
