@@ -31,6 +31,7 @@ export class ServingConstruct extends Construct {
 
     this.api = new apigateway.RestApi(this, "InferenceGatewayApi", {
       deployOptions: { stageName: "prod" },
+      binaryMediaTypes: ["image/jpeg", "image/png"],
       // TODO: Customize CORS settings as needed for production use.
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,

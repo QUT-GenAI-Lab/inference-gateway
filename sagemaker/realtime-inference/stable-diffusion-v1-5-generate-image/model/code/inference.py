@@ -161,9 +161,9 @@ def predict_fn(data: dict[str, Any], model_context: dict[str, Any]) -> Any:
     return result.images[0]
 
 
-def output_fn(prediction: Any, accept: str) -> tuple[str | bytes, str]:
+def output_fn(prediction: Any, accept: str) -> str | bytes:
     if isinstance(prediction, dict):
-        return json.dumps(prediction), CONTENT_TYPE_JSON
+        return json.dumps(prediction)
 
     content_type = _media_type(accept)
     if content_type not in SUPPORTED_IMAGE_TYPES:
@@ -178,4 +178,13 @@ def output_fn(prediction: Any, accept: str) -> tuple[str | bytes, str]:
     # Save the image to buffer instead of disk for immediate return
     buffer = io.BytesIO()
     image.save(buffer, format=image_format)
-    return buffer.getvalue(), content_type
+    image_bytes = buffer.getvalue()
+    print(
+        {
+            "prediction_type": type(prediction).__name__,
+            "output_type": type(image_bytes).__name__,
+            "output_size": len(image_bytes),
+            "accept": accept,
+        }
+    )
+    return image_bytes

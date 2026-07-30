@@ -174,7 +174,8 @@ def generate_image(
 
     data = input_fn(json.dumps(request), "application/json")
     prediction = predict_fn(data, context)
-    body, content_type = output_fn(prediction, f"image/{settings.image_format}")
+    content_type = f"image/{settings.image_format}"
+    body = output_fn(prediction, content_type)
     if not isinstance(body, bytes):
         raise TypeError("image generation returned a non-binary response")
 

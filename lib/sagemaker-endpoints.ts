@@ -95,6 +95,28 @@ export class SageMakerEndpoints extends Construct {
         },
       ),
     );
+    this.endpoints.push(
+      new SageMakerRealtimeEndpoint(
+        this,
+        "StableDiffusionV1_5GenerateImageEndpoint",
+        {
+          endpointName: "stable-diffusion-v1-5-generate-image",
+          imageUri:
+            props.customDockerImageUris[
+              "pytorch-inference-gpu-diffusers-codecarbon"
+            ],
+          modelArtifactBucket,
+          instanceType: "ml.g4dn.xlarge",
+          containerEnvironment: {
+            SAGEMAKER_PROGRAM: "inference.py",
+            SAGEMAKER_SUBMIT_DIRECTORY: "/opt/ml/model/code",
+            HF_TASK: "text-to-image",
+          },
+          minMemoryRequiredMb: 3 * MB_PER_GB,
+          maxMemoryRequiredMb: 5 * MB_PER_GB,
+        },
+      ),
+    );
 
     new cdk.CfnOutput(this, "ModelArtifactsBucketName", {
       value: modelArtifactBucket.bucketName,

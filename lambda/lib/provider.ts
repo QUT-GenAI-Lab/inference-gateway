@@ -1,13 +1,30 @@
 import { z } from "zod";
-import { GENERATE_CHAT_PROVIDER_NAMES } from "./provider-router";
+import { randomBytes } from "node:crypto";
+import {
+  GENERATE_CHAT_PROVIDER_NAMES,
+  GENERATE_IMAGE_PROVIDER_NAMES,
+} from "./provider-router";
 import { PreprocessorBuilder } from "./utils/preprocessors";
 
 export const NEXT_TOKEN_MIN_TOP_K = 1;
 export const NEXT_TOKEN_DEFAULT_TOP_K = 10;
 export const NEXT_TOKEN_MAX_TOP_K = 50;
 export const NEXT_TOKEN_MAX_TEXT_LENGTH = 2000;
+export const GENERATE_IMAGE_DEFAULT_INFERENCE_STEPS = 10;
+export const GENERATE_IMAGE_DEFAULT_GUIDANCE_SCALE = 5;
+export const GENERATE_IMAGE_MAX_PROMPT_LENGTH = 2000;
+export const GENERATE_IMAGE_MIN_DIMENSION = 64;
+export const GENERATE_IMAGE_MAX_DIMENSION = 1024;
+export const GENERATE_IMAGE_MAX_SEED = 4_294_967_295;
 
-const sagemakerResponsePreprocessor = new PreprocessorBuilder()
+export const IMAGE_MEDIA_TYPES = ["image/jpeg", "image/png"] as const;
+export type ImageMediaType = (typeof IMAGE_MEDIA_TYPES)[number];
+
+function randomImageSeed(): number {
+  return randomBytes(4).readUInt32BE(0);
+}
+
+const jsonPreprocessor = new PreprocessorBuilder()
   .parseJsonTuple()
   .normaliseEcoMetricsResponse()
   .build();
@@ -200,7 +217,7 @@ export const GenerateChatSchema = {
   }),
   output: z
     .preprocess(
-      sagemakerResponsePreprocessor,
+      jsonPreprocessor,
       z.object({
         content: z.string(),
         ecoMetrics: EcoMetricsSchema.optional(),
@@ -210,6 +227,84 @@ export const GenerateChatSchema = {
       description: "The generated response from the model.",
       example: {
         content: "The capital of France is Paris.",
+      },
+    }),
+};
+
+const ImageDimensionSchema = z
+  .number()
+  .int()
+  .min(GENERATE_IMAGE_MIN_DIMENSION)
+  .max(GENERATE_IMAGE_MAX_DIMENSION)
+  .multipleOf(8);
+
+export const GenerateImageSchema = {
+  input: z.object({
+    prompt: z.string().min(0).max(GENERATE_IMAGE_MAX_PROMPT_LENGTH).openapi({
+      description: "Text prompt describing the image to generate.",
+      example: "A cozy treehouse at sunset, digital art",
+    }),
+    dimensions: z
+      .object({
+        width: ImageDimensionSchema.openapi({ example: 512, multipleOf: 8 }),
+        height: ImageDimensionSchema.openapi({ example: 512, multipleOf: 8 }),
+      })
+      .openapi({
+        description:
+          "Output dimensions in pixels. Each value must be divisible by 8.",
+      }),
+    seed: z
+      .number()
+      .int()
+      .min(0)
+      .max(GENERATE_IMAGE_MAX_SEED)
+      .optional()
+      .transform((seed) => seed ?? randomImageSeed())
+      .openapi({
+        description:
+          "Unsigned 32-bit seed. A random seed is generated when omitted.",
+        example: 42,
+      }),
+    config: z
+      .object({
+        num_inference_steps: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(GENERATE_IMAGE_DEFAULT_INFERENCE_STEPS),
+        guidance_scale: z
+          .number()
+          .min(0)
+          .max(20)
+          .default(GENERATE_IMAGE_DEFAULT_GUIDANCE_SCALE),
+      })
+      .default({
+        num_inference_steps: GENERATE_IMAGE_DEFAULT_INFERENCE_STEPS,
+        guidance_scale: GENERATE_IMAGE_DEFAULT_GUIDANCE_SCALE,
+      })
+      .openapi({
+        description: "Stable Diffusion sampling configuration.",
+      }),
+    model: z.enum(GENERATE_IMAGE_PROVIDER_NAMES).openapi({
+      description: "The image generation model to use.",
+      example: "stable-diffusion-v1-5/stable-diffusion-v1-5",
+    }),
+  }),
+  output: z
+    .object({
+      bytes: z.instanceof(Uint8Array<ArrayBuffer>).openapi({
+        description: "The generated image bytes.",
+      }),
+      contentType: z.enum(IMAGE_MEDIA_TYPES).openapi({
+        description: "The MIME type of the generated image.",
+      }),
+    })
+    .openapi({
+      description: "The generated image and its metadata.",
+      example: {
+        bytes: [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82],
+        contentType: "image/png",
       },
     }),
 };
@@ -228,7 +323,7 @@ export const NextTokenSchema = {
   }),
   output: z
     .preprocess(
-      sagemakerResponsePreprocessor,
+      jsonPreprocessor,
       z.object({
         tokens: z.array(
           z.object({
@@ -307,6 +402,13 @@ export interface GenerateChatProvider extends BaseProvider {
   generateChat(
     input: z.infer<typeof GenerateChatSchema.input>,
   ): Promise<z.infer<typeof GenerateChatSchema.output>>;
+}
+
+export interface GenerateImageProvider extends BaseProvider {
+  generateImage(
+    input: z.infer<typeof GenerateImageSchema.input>,
+    accept: ImageMediaType,
+  ): Promise<z.infer<typeof GenerateImageSchema.output>>;
 }
 
 export interface NextTokenProvider extends BaseProvider {
