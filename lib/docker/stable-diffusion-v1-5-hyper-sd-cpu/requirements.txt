@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+fastapi[standard]
+optimum-onnx[onnxruntime]
+torch --index-url https://download.pytorch.org/whl/cpu
+diffusers
+Pillow
+peft

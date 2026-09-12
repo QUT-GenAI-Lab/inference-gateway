@@ -1,0 +1,7 @@
+services:
+  stable-diffusion-v1-5-hyper-sd-cpu:
+    build: .
+    image: stable-diffusion-v1-5-hyper-sd-cpu:latest
+    container_name: stable-diffusion-v1-5-hyper-sd-cpu
+    ports:
+      - "8000:8000"
