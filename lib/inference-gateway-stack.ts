@@ -44,6 +44,25 @@ export class InferenceGatewayStack extends cdk.Stack {
       },
     );
 
+    // Use SSM access for database migrations.
+    const bastion = new ec2.BastionHostLinux(this, "BastionHost", {
+      vpc,
+      instanceName: "InferenceGatewayBastion",
+      instanceType: new ec2.InstanceType("t4g.nano"),
+    });
+    const proxySecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+      this,
+      "ArcadeRdsProxySecurityGroup",
+      // SST owns the RDS Proxy security group.
+      "sg-04578fbf200931eca",
+    );
+    proxySecurityGroup.connections.allowFrom(
+      bastion,
+      ec2.Port.tcp(5432),
+      "Allow PostgreSQL access through the SSM bastion",
+    );
+    new cdk.CfnOutput(this, "BastionHostId", { value: bastion.instanceId });
+
     const gpuHost = new DevInstanceConstruct(this, "DevInstance", {
       lambdaSecurityGroup,
       idleTimeoutMinutes: props?.gpuIdleTimeoutMinutes,
