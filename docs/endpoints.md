@@ -2,8 +2,6 @@
 
 This document describes the endpoints exposed by the GenAI Arcade Inference Gateway. Routes require the `x-api-key` header; each OpenAPI route should include `security: [{ apiKey: [] }]`.
 
-The next-token predictor implementation follows `.agents/tasks/20260621_next-token-predictor.md`.
-
 ## `GET /health`
 
 Checks whether the gateway Lambda is reachable.
@@ -18,7 +16,7 @@ Checks whether the gateway Lambda is reachable.
 
 ## `POST /generate/chat`
 
-Text generation endpoint for chat-based models backed by `GenerateChatProvider`. The current implementation is `BedrockProvider`.
+Generate chat responses through AWS Bedrock, SageMaker, or the EC2 development backend.
 
 **Request Body:**
 
@@ -28,7 +26,8 @@ Text generation endpoint for chat-based models backed by `GenerateChatProvider`.
     { "role": "user", "content": "What is the capital of France?" }
   ],
   "system": "You are a helpful assistant that provides concise answers.",
-  "model": "amazon.nova-micro-v1:0"
+  "model": "amazon.nova-micro-v1:0",
+  "includeEcoMetrics": false
 }
 ```
 
@@ -36,7 +35,18 @@ Text generation endpoint for chat-based models backed by `GenerateChatProvider`.
 | --- | --- | --- | --- |
 | `messages` | array | required | Chat messages with `role` and `content` fields. |
 | `system` | string | none | Optional system instructions. |
-| `model` | string | `amazon.nova-micro-v1:0` | Bedrock model ID. |
+| `includeEcoMetrics` | boolean | `false` | Include energy, water, and emissions metrics when supported by the provider. |
+| `model` | string | `amazon.nova-micro-v1:0` | Routed Bedrock, SageMaker, or EC2 model ID. |
+
+Use `liquidai.lfm2.5-230m` for LFM2.5-230M chat. Set `includeEcoMetrics` to `true` for CodeCarbon estimates:
+
+```json
+{
+  "messages": [{ "role": "user", "content": "Who are you?" }],
+  "model": "liquidai.lfm2.5-230m",
+  "includeEcoMetrics": true
+}
+```
 
 **Response:**
 

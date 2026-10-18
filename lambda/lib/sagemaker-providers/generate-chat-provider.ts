@@ -9,11 +9,17 @@ const client = new SageMakerRuntimeClient({
   region: process.env.AWS_REGION,
 });
 
+const LFM2_5_SERVERLESS_ENDPOINT = "lfm2-5-230m-generate-text";
+
 class SageMakerGenerateChatProvider implements GenerateChatProvider {
   private readonly endpointName?: string;
+  private readonly invocationConfig: { InferenceComponentName?: string };
 
   constructor(endpointName?: string) {
     this.endpointName = endpointName;
+    this.invocationConfig = endpointName === LFM2_5_SERVERLESS_ENDPOINT
+      ? {}
+      : { InferenceComponentName: `${endpointName}-inference-component` };
   }
 
   async isReady(): Promise<boolean> {
@@ -27,7 +33,7 @@ class SageMakerGenerateChatProvider implements GenerateChatProvider {
       await client.send(
         new InvokeEndpointCommand({
           EndpointName: this.endpointName,
-          InferenceComponentName: `${this.endpointName}-inference-component`,
+          ...this.invocationConfig,
           ContentType: "application/json",
           Accept: "application/json",
           Body: Buffer.from(JSON.stringify({ healthCheck: true })),
@@ -35,13 +41,8 @@ class SageMakerGenerateChatProvider implements GenerateChatProvider {
       );
       return true;
     } catch (error) {
-      // SageMaker real-time endpoints backed by inference components with
-      // scale-to-zero return a ValidationError (HTTP 400, "Inference Component
-      // has no capacity to process this request") when there are zero active
-      // copies. That failed invocation emits the NoCapacityInvocationFailures
-      // CloudWatch metric, which drives the step-scaling policy that scales the
-      // inference component back out from zero. Until a copy is ready, treat
-      // the endpoint as not ready so callers retry.
+      // No-capacity invocations emit NoCapacityInvocationFailures to wake real-time components.
+      // Return not ready until capacity is available.
       console.error(
         `SageMaker endpoint ${this.endpointName} not ready (possibly scaling out from zero):`,
         error,
@@ -62,7 +63,7 @@ class SageMakerGenerateChatProvider implements GenerateChatProvider {
     const response = await client.send(
       new InvokeEndpointCommand({
         EndpointName: this.endpointName,
-        InferenceComponentName: `${this.endpointName}-inference-component`,
+        ...this.invocationConfig,
         ContentType: "application/json",
         Accept: "application/json",
         Body: Buffer.from(
@@ -95,13 +96,8 @@ class SageMakerGenerateChatProvider implements GenerateChatProvider {
 }
 
 /**
- * Factory function to create a SageMakerGenerateChatProvider class with a specific endpoint name.
- * This allows for dynamic creation of provider classes for different SageMaker endpoints.
- *
+ * Bind an endpoint to the constructor expected by the provider router.
  * Have I been coding too much Java? Maybe.
- *
- * @param endpointName - The name of the SageMaker endpoint to be used by the provider.
- * @returns A new class that extends SageMakerGenerateChatProvider, configured with the specified endpoint name.
  */
 export function SageMakerGenerateChatProviderClassFactory(
   endpointName?: string,

@@ -58,6 +58,24 @@ export class SageMakerEndpoints extends Construct {
       }),
     );
     this.endpoints.push(
+      new SageMakerServerlessEndpoint(this, "Lfm2_5_230mGenerateTextEndpoint", {
+        endpointName: "lfm2-5-230m-generate-text",
+        imageUri:
+          props.customDockerImageUris["pytorch-inference-cpu-codecarbon"],
+        modelArtifactBucket,
+        serverlessMemorySizeInMb: 6144,
+        serverlessMaxConcurrency: 20,
+        containerEnvironment: {
+          SAGEMAKER_PROGRAM: "inference.py",
+          SAGEMAKER_SUBMIT_DIRECTORY: "/opt/ml/model/code",
+          SAGEMAKER_MODEL_SERVER_WORKERS: "1",
+          HF_TASK: "text-generation",
+          MODEL_ARTIFACT_REVISION:
+            "sha256:26ade13eac287fff9ae82cdc81bc4a2d13277805a3f17618f56b42efa736ffba",
+        },
+      }),
+    );
+    this.endpoints.push(
       new SageMakerRealtimeEndpoint(this, "Llama1_7bGenerateChatEndpoint", {
         endpointName: "llama-1-7b-generate-text",
         imageUri:
