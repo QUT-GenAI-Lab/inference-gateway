@@ -6,40 +6,13 @@ import { z } from "zod";
 import {
   GenerateImageProvider,
   GenerateImageSchema,
-  IMAGE_MEDIA_TYPES,
   ImageMediaType,
 } from "../provider";
+import { validateImageResponse } from "../utils/image-response";
 
 const client = new SageMakerRuntimeClient({
   region: process.env.AWS_REGION,
 });
-
-const JPEG_SIGNATURE = [0xff, 0xd8, 0xff] as const;
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
-
-function normalizeImageContentType(contentType?: string): ImageMediaType | null {
-  const normalized = contentType?.split(";", 1)[0].trim().toLowerCase();
-  return IMAGE_MEDIA_TYPES.includes(normalized as ImageMediaType)
-    ? (normalized as ImageMediaType)
-    : null;
-}
-
-function hasSignature(bytes: Uint8Array, signature: readonly number[]): boolean {
-  return (
-    bytes.byteLength >= signature.length &&
-    signature.every((value, index) => bytes[index] === value)
-  );
-}
-
-function hasValidImageSignature(
-  bytes: Uint8Array,
-  contentType: ImageMediaType,
-): boolean {
-  return hasSignature(
-    bytes,
-    contentType === "image/jpeg" ? JPEG_SIGNATURE : PNG_SIGNATURE,
-  );
-}
 
 class SageMakerGenerateImageProvider implements GenerateImageProvider {
   private readonly endpointName?: string;
@@ -103,21 +76,8 @@ class SageMakerGenerateImageProvider implements GenerateImageProvider {
       throw new Error("SageMaker returned an empty image response body.");
     }
 
-    const contentType = normalizeImageContentType(response.ContentType);
-    if (!contentType || contentType !== accept) {
-      throw new Error(
-        `SageMaker returned an invalid image content type: ${response.ContentType ?? "missing"}.`,
-      );
-    }
-
     const bytes = Uint8Array.from(response.Body);
-    if (!hasValidImageSignature(bytes, contentType)) {
-      throw new Error(
-        `SageMaker returned a malformed ${contentType} response body.`,
-      );
-    }
-
-    return GenerateImageSchema.output.parse({ bytes, contentType });
+    return validateImageResponse(bytes, response.ContentType, accept, "SageMaker");
   }
 }
 
