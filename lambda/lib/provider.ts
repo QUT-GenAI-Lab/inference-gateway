@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import { randomBytes } from "node:crypto";
 import {
   GENERATE_CHAT_PROVIDER_NAMES,
@@ -396,6 +396,14 @@ export function normalizeNextTokenInput(
 
 interface BaseProvider {
   isReady(): Promise<boolean>;
+}
+
+/** Routes return HTTP 503 for this error so callers can retry. */
+export class ProviderNotReadyError extends Error {
+  constructor(message = "Provider is not ready. Please try again later.") {
+    super(message);
+    this.name = "ProviderNotReadyError";
+  }
 }
 
 export interface GenerateChatProvider extends BaseProvider {

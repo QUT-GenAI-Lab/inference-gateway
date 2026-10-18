@@ -3,6 +3,7 @@ import {
   GenerateChatSchema,
   GenerateImageSchema,
   ImageMediaType,
+  ProviderNotReadyError,
 } from "../lib/provider";
 import { getProvider } from "../lib/provider-router";
 import { z } from "zod";
@@ -75,11 +76,23 @@ route.openapi(
         503,
       );
     }
-    const output = await provider.generateChat(input);
-    return c.json(output, 200);
+    try {
+      const output = await provider.generateChat(input);
+      return c.json(output, 200);
+    } catch (error) {
+      // A model can go cold between the readiness check and the invocation.
+      if (error instanceof ProviderNotReadyError) {
+        return c.json(
+          {
+            error: `Provider for model ${input.model} is not ready. Please try again later.`,
+          },
+          503,
+        );
+      }
+      throw error;
+    }
   },
 );
-
 const ImageErrorSchema = z.object({
   error: z.string(),
 });
@@ -259,6 +272,15 @@ route.openapi(
         "Cache-Control": "no-store",
       });
     } catch (error) {
+      // A model can go cold between the readiness check and the invocation.
+      if (error instanceof ProviderNotReadyError) {
+        return c.json(
+          {
+            error: `Provider for model ${input.model} is not ready. Please try again later.`,
+          },
+          503,
+        );
+      }
       console.error("Image generation failed", error);
       return c.json({ error: "Image generation failed." }, 500);
     }
