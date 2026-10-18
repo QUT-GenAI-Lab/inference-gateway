@@ -14,7 +14,7 @@
     "ecr:login": "cross-env-shell aws ecr get-login-password --profile qut-genai-lab --region ap-southeast-2 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.ap-southeast-2.amazonaws.com",
     "model:download": "cross-env-shell python $INIT_CWD/download.py",
     "model:package": "cross-env-shell tar -czf $INIT_CWD/model.tar.gz -C $INIT_CWD/model .",
-    "model:upload": "tsx scripts/upload-model-artifact.ts"
+    "model:upload": "tsx scripts/upload-model-artifact.ts --profile qut-genai-lab"
   },
   "devDependencies": {
     "@types/jest": "^30",

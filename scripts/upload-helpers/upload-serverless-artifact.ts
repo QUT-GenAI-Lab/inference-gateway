@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import { MODEL_ARTIFACT_BUCKET_NAME } from "../../lib/sagemaker-endpoints";
 
@@ -7,10 +7,6 @@ const SAGEMAKER_DIRECTORY = "sagemaker";
 
 function normaliseToS3Path(value: string): string {
   return value.split(path.sep).join("/");
-}
-
-function getInvocationDirectory(): string {
-  return process.env.INIT_CWD ?? process.cwd();
 }
 
 function getS3KeyFromDirectory(directory: string): string {
@@ -32,8 +28,19 @@ function getS3KeyFromDirectory(directory: string): string {
   return normaliseToS3Path(path.join(...keyParts, "model.tar.gz"));
 }
 
-function uploadToS3(localFilePath: string, s3Uri: string): void {
-  const result = spawnSync("aws", ["s3", "cp", localFilePath, s3Uri], {
+function uploadToS3(
+  localFilePath: string,
+  s3Uri: string,
+  profile: string | undefined,
+): void {
+  const args = [
+    ...(profile ? ["--profile", profile] : []),
+    "s3",
+    "cp",
+    localFilePath,
+    s3Uri,
+  ];
+  const result = spawnSync("aws", args, {
     stdio: "inherit",
     shell: process.platform === "win32",
   });
@@ -47,10 +54,10 @@ function uploadToS3(localFilePath: string, s3Uri: string): void {
   }
 }
 
-export function main(): void {
+export function main(profile?: string): void {
   const bucket =
     process.env.SAGEMAKER_MODELS_BUCKET ?? MODEL_ARTIFACT_BUCKET_NAME;
-  const invocationDirectory = getInvocationDirectory();
+  const invocationDirectory = process.env.INIT_CWD ?? process.cwd();
   const modelPath = path.join(invocationDirectory, "model.tar.gz");
 
   if (!existsSync(modelPath)) {
@@ -63,7 +70,7 @@ export function main(): void {
   console.log(`Uploading ${modelPath}`);
   console.log(`Destination: ${s3Uri}`);
 
-  uploadToS3(modelPath, s3Uri);
+  uploadToS3(modelPath, s3Uri, profile);
 
   console.log("Upload complete.");
 }

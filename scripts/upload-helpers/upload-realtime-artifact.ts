@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import path from "node:path";
+import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import { MODEL_ARTIFACT_BUCKET_NAME } from "../../lib/sagemaker-endpoints";
 
@@ -8,10 +8,6 @@ const CODE_DIRECTORY = "code";
 
 function normaliseToS3Path(value: string): string {
   return value.split(path.sep).join("/");
-}
-
-function getInvocationDirectory(): string {
-  return process.env.INIT_CWD ?? process.cwd();
 }
 
 function getS3PrefixFromDirectory(directory: string): string {
@@ -38,9 +34,17 @@ function getS3PrefixFromDirectory(directory: string): string {
 function syncToS3(
   localDirectory: string,
   s3Uri: string,
+  profile: string | undefined,
   additionalArguments: string[] = [],
 ): void {
-  const args = ["s3", "sync", localDirectory, s3Uri, ...additionalArguments];
+  const args = [
+    ...(profile ? ["--profile", profile] : []),
+    "s3",
+    "sync",
+    localDirectory,
+    s3Uri,
+    ...additionalArguments,
+  ];
 
   console.log(`Running: aws ${args.join(" ")}`);
 
@@ -58,12 +62,16 @@ function syncToS3(
   }
 }
 
-function uploadToS3(modelPath: string, s3Uri: string): void {
+function uploadToS3(
+  modelPath: string,
+  s3Uri: string,
+  profile: string | undefined,
+): void {
   const codePath = path.join(modelPath, CODE_DIRECTORY);
 
   console.log("Syncing model files using file-size comparison only.");
 
-  syncToS3(modelPath, s3Uri, [
+  syncToS3(modelPath, s3Uri, profile, [
     "--delete",
     "--size-only",
     "--exclude",
@@ -77,14 +85,14 @@ function uploadToS3(modelPath: string, s3Uri: string): void {
 
   console.log("Syncing code files using normal size and timestamp comparison.");
 
-  syncToS3(codePath, `${s3Uri}${CODE_DIRECTORY}/`, ["--delete"]);
+  syncToS3(codePath, `${s3Uri}${CODE_DIRECTORY}/`, profile, ["--delete"]);
 }
 
-export function main(): void {
+export function main(profile?: string): void {
   const bucket =
     process.env.SAGEMAKER_MODELS_BUCKET ?? MODEL_ARTIFACT_BUCKET_NAME;
 
-  const invocationDirectory = getInvocationDirectory();
+  const invocationDirectory = process.env.INIT_CWD ?? process.cwd();
   const modelPath = path.join(invocationDirectory, "model");
 
   if (!existsSync(modelPath)) {
@@ -97,7 +105,7 @@ export function main(): void {
   console.log(`Uploading ${modelPath}`);
   console.log(`Destination: ${s3Uri}`);
 
-  uploadToS3(modelPath, s3Uri);
+  uploadToS3(modelPath, s3Uri, profile);
 
   console.log("Upload complete.");
 }
