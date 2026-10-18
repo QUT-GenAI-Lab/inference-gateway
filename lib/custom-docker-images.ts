@@ -5,6 +5,7 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 const DOCKER_IMAGES = [
   "pytorch-inference-gpu-codecarbon",
   "pytorch-inference-gpu-diffusers-codecarbon",
+  "pytorch-inference-cpu-codecarbon",
 ] as const;
 
 type DockerImageName = (typeof DOCKER_IMAGES)[number];
@@ -30,6 +31,9 @@ export class CustomDockerImagesStack extends Construct {
         `${imageName}-custom-image`,
         {
           directory: imagePath,
+          ...(imageName === "pytorch-inference-cpu-codecarbon"
+            ? { platform: ecr_assets.Platform.LINUX_AMD64 }
+            : {}),
         },
       );
     }

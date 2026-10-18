@@ -92,6 +92,17 @@ else:
     print(f"Error: {response.status_code} - {response.text}")
 ```
 
+Use `liquidai.lfm2.5-230m` for LFM2.5-230M serverless chat. Set
+`includeEcoMetrics` to `true` for CodeCarbon estimates:
+
+```json
+{
+  "messages": [{ "role": "user", "content": "Who are you?" }],
+  "model": "liquidai.lfm2.5-230m",
+  "includeEcoMetrics": true
+}
+```
+
 ## EC2 GPU Development Backend
 
 These development models run on a single `g4dn.xlarge` EC2 instance:

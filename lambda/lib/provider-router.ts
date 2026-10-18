@@ -18,6 +18,9 @@ const GENERATE_CHAT_PROVIDERS: Record<string, new () => GenerateChatProvider> = 
   "meta.llama-3.2-3b-instruct": SageMakerGenerateChatProviderClassFactory(
     "llama-3-2-3b-instruct-generate-text",
   ),
+  "liquidai.lfm2.5-230m": SageMakerGenerateChatProviderClassFactory(
+    "lfm2-5-230m-generate-text",
+  ),
   "dev.meta.llama-3.2-3b-instruct": Ec2GenerateChatProviderClassFactory(
     "llama",
     "dev.meta.llama-3.2-3b-instruct",
