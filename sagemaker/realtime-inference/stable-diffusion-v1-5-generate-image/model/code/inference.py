@@ -99,7 +99,7 @@ def input_fn(request_body: str | bytes, content_type: str) -> dict[str, Any]:
     height = _validate_dimension(dimensions.get("height"), "dimensions.height")
 
     model = payload.get("model")
-    if model != MODEL_ID:
+    if not isinstance(model, str) or model.removeprefix("dev.") != MODEL_ID:
         raise ValueError(f"model must be {MODEL_ID}")
 
     seed_value = payload.get("seed")
