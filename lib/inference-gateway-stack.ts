@@ -64,11 +64,24 @@ export class InferenceGatewayStack extends cdk.Stack {
       securityGroups: [lambdaSecurityGroup],
       environment: {
         EC2_GPU_MANAGER_URL: gpuHost.managerUrl,
+        EC2_GPU_INSTANCE_ID: gpuHost.instanceId,
       },
     });
     fn.node.addDependency(sageMakerEndpoints);
     fn.node.addDependency(gpuHost);
     sageMakerEndpoints.grantInvoke(fn);
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ec2:StartInstances"],
+        resources: [
+          this.formatArn({
+            service: "ec2",
+            resource: "instance",
+            resourceName: gpuHost.instanceId,
+          }),
+        ],
+      }),
+    );
 
     const servingConstruct = new ServingConstruct(
       this,

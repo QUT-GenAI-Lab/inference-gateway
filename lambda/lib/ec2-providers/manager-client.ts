@@ -1,7 +1,11 @@
 /** CDK supplies the manager's private URL through EC2_GPU_MANAGER_URL. */
 
+import { EC2Client, StartInstancesCommand } from "@aws-sdk/client-ec2";
+
 const MANAGER_URL_ENV = "EC2_GPU_MANAGER_URL";
+const INSTANCE_ID_ENV = "EC2_GPU_INSTANCE_ID";
 const STATUS_TIMEOUT_MS = 5000;
+const ec2 = new EC2Client({});
 
 export interface ManagerModelStatus {
   model: string;
@@ -55,6 +59,25 @@ export class Ec2GpuManagerClient {
     }
   }
 
+  async startInstance(): Promise<void> {
+    const instanceId = process.env[INSTANCE_ID_ENV];
+    if (!instanceId) {
+      throw new Error(`${INSTANCE_ID_ENV} is required to start the EC2 GPU host.`);
+    }
+
+    try {
+      await ec2.send(
+        new StartInstancesCommand({ InstanceIds: [instanceId] }),
+        { abortSignal: AbortSignal.timeout(STATUS_TIMEOUT_MS) },
+      );
+    } catch (error) {
+      if (error instanceof Error && error.name === "IncorrectInstanceState") {
+        return;
+      }
+      throw error;
+    }
+  }
+
   async invoke(body: unknown, accept?: string): Promise<Response> {
     return fetch(`${this.baseUrl()}/models/${this.service}/invoke`, {
       method: "POST",
@@ -67,7 +90,8 @@ export class Ec2GpuManagerClient {
   }
 }
 
-/** Wake cold models in the background and report not ready until they can serve. */
+// Wake cold models, or start the host if the manager is unreachable.
+// Report not ready until the model can serve.
 export async function isEc2ModelReady(
   client: Ec2GpuManagerClient,
 ): Promise<boolean> {
@@ -78,6 +102,11 @@ export async function isEc2ModelReady(
     }
   } catch (error) {
     console.error("EC2 GPU model manager is unavailable:", error);
+    try {
+      await client.startInstance();
+    } catch (startError) {
+      console.error("Failed to start EC2 GPU development instance:", startError);
+    }
     return false;
   }
 
