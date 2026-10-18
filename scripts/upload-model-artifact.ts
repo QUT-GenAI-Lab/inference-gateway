@@ -3,19 +3,35 @@ import { main as uploadServerlessArtifact } from "./upload-helpers/upload-server
 
 import { existsSync } from "node:fs";
 
-function main(): void {
-  // Determine whether the model artifact is a directory (for real-time inference) or a file (for serverless inference)
+export function getProfile(args: string[]): string | undefined {
+  const profileIndex = args.lastIndexOf("--profile");
+
+  if (profileIndex === -1) {
+    return undefined;
+  }
+
+  const profile = args[profileIndex + 1];
+  if (!profile || profile.startsWith("--")) {
+    throw new Error("Expected a profile name after --profile");
+  }
+
+  return profile;
+}
+
+export function main(args = process.argv.slice(2)): void {
+  const profile = getProfile(args);
+
+  // npm runs scripts from the package root; INIT_CWD keeps the model directory.
   const modelPath = process.env.INIT_CWD ?? process.cwd();
 
   if (!existsSync(modelPath)) {
     throw new Error(`Model artifact not found: ${modelPath}`);
   }
 
-  // Check if the path has realtime-inference, or serverless-inference in its path to determine which upload function to call
   if (modelPath.includes("realtime-inference")) {
-    uploadRealtimeArtifact();
+    uploadRealtimeArtifact(profile);
   } else if (modelPath.includes("serverless-inference")) {
-    uploadServerlessArtifact();
+    uploadServerlessArtifact(profile);
   } else {
     throw new Error(
       `Could not determine inference type from model path: ${modelPath}`,
@@ -23,4 +39,6 @@ function main(): void {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
