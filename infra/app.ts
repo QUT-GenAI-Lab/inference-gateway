@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
-import { InferenceGatewayStack } from "../lib/inference-gateway-stack";
+import { InferenceGatewayStack } from "./inference-gateway-stack";
 
 const app = new cdk.App();
 new InferenceGatewayStack(app, "InferenceGatewayStack", {
