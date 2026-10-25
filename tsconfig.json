@@ -30,7 +30,7 @@
     ],
     "paths": {
       "$lib/*": [
-        "./lambda/lib/*"
+        "./src/lib/*"
       ],
     }
   },
