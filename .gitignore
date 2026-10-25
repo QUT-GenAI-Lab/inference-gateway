@@ -16,7 +16,7 @@ swagger.json
 *.model
 *.tar.gz
 *.jinja
-sagemaker/**/model/*.json
+models/**/model/*.json
 
 __pycache__
 

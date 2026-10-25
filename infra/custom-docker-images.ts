@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
@@ -13,7 +14,7 @@ type DockerImageName = (typeof DOCKER_IMAGES)[number];
 export type CustomDockerImageUris = Record<DockerImageName, string>;
 
 function getDockerImagePath(imageName: string): string {
-  return `lib/docker/${imageName}`;
+  return path.resolve(__dirname, "..", "models", "docker", imageName);
 }
 
 export class CustomDockerImagesStack extends Construct {

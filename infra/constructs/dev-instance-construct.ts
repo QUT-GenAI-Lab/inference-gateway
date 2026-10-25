@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import * as cdk from "aws-cdk-lib/core";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
@@ -33,19 +34,19 @@ export const GPU_MODEL_CATALOG: readonly GpuModelCatalogEntry[] = [
     modelId: "dev.meta.llama-3.2-3b-instruct",
     providerType: "generate-chat",
     modelDirectory:
-      "sagemaker/realtime-inference/llama-3-2-3b-instruct-generate-text",
+      "models/realtime-inference/llama-3-2-3b-instruct-generate-text",
   },
   {
     service: "stable-diffusion",
     modelId: "dev.stable-diffusion-v1-5/stable-diffusion-v1-5",
     providerType: "generate-image",
     modelDirectory:
-      "sagemaker/realtime-inference/stable-diffusion-v1-5-generate-image",
+      "models/realtime-inference/stable-diffusion-v1-5-generate-image",
   },
 ];
 
 const MANAGER_SERVICE = "model-manager";
-const MANAGER_IMAGE_DIRECTORY = "lib/docker/gpu-model-manager";
+const MANAGER_IMAGE_DIRECTORY = "models/docker/gpu-model-manager";
 const COMPOSE_FILE = "/opt/ml/compose.yaml";
 const COMPOSE_PROJECT = "gpu";
 
@@ -196,7 +197,7 @@ export class DevInstanceConstruct extends Construct {
       this,
       "GpuModelManagerImage",
       {
-        directory: MANAGER_IMAGE_DIRECTORY,
+        directory: path.resolve(__dirname, "../..", MANAGER_IMAGE_DIRECTORY),
         platform: ecr_assets.Platform.LINUX_AMD64,
       },
     );
@@ -208,7 +209,7 @@ export class DevInstanceConstruct extends Construct {
         this,
         `${entry.service}-model-image`,
         {
-          directory: entry.modelDirectory,
+          directory: path.resolve(__dirname, "../..", entry.modelDirectory),
           platform: ecr_assets.Platform.LINUX_AMD64,
         },
       );
