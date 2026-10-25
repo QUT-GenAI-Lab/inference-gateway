@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { app } from "../lambda"; // Your main app file
+import { app } from "../src"; // Your main app file
 
 const args = process.argv.slice(2);
 const baseUrl = args[0] || "https://inference.genai-arcade.net";

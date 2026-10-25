@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import * as cdk from "aws-cdk-lib/core";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -73,7 +74,7 @@ export class InferenceGatewayStack extends cdk.Stack {
     new cdk.CfnOutput(this, "GpuInstanceId", { value: gpuHost.instanceId });
 
     const fn = new NodejsFunction(this, "InferenceGatewayFn", {
-      entry: "lambda/index.ts",
+      entry: path.resolve(__dirname, "..", "src", "index.ts"),
       handler: "handler",
       runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 512,
