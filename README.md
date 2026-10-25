@@ -103,6 +103,19 @@ Use `liquidai.lfm2.5-230m` for LFM2.5-230M serverless chat. Set
 }
 ```
 
+## Repository Layout
+
+- `src/` - Lambda application, Hono routes, and inference providers. Start at `src/index.ts`.
+- `infra/` - CDK app, stack, endpoint constructs, and infrastructure utilities. Start at `infra/app.ts`.
+- `models/realtime-inference/` and `models/serverless-inference/` - Model handlers, download scripts, and local runners. Real-time model directories also contain their EC2 Docker images.
+- `models/docker/` - Shared SageMaker inference images and the EC2 GPU model manager.
+- `scripts/`, `test/`, `public/`, and `docs/` - Developer tooling, tests, generated API documentation assets, and reference documentation.
+
+Run build, test, OpenAPI, and deployment commands from the repository root.
+Run `model:download`, `model:package`, and `model:upload` from the relevant model
+directory; uploads retain their existing S3 keys beneath `realtime-inference/`
+or `serverless-inference/`.
+
 ## EC2 GPU Development Backend
 
 These development models run on a single `g4dn.xlarge` EC2 instance:
@@ -121,8 +134,8 @@ Run these commands from the `inference-gateway` root. Download the weights
 first; each model's README covers any gated-model access requirements:
 
 ```bash
-(cd sagemaker/realtime-inference/llama-3-2-3b-instruct-generate-text && npm run model:download)
-(cd sagemaker/realtime-inference/stable-diffusion-v1-5-generate-image && npm run model:download)
+(cd models/realtime-inference/llama-3-2-3b-instruct-generate-text && npm run model:download)
+(cd models/realtime-inference/stable-diffusion-v1-5-generate-image && npm run model:download)
 npm run deploy
 ```
 

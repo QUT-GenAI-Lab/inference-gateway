@@ -69,13 +69,13 @@ Creates `model.tar.gz` from the contents of `model/` (`tar -czf model.tar.gz -C 
 npm run model:upload
 ```
 
-Uploads `model.tar.gz` to the SageMaker model artifact bucket using `aws s3 cp`. The S3 key is derived from the invocation directory: anything under `sagemaker/` becomes the key prefix, with `model.tar.gz` appended. From this directory the destination is:
+Uploads `model.tar.gz` to the SageMaker model artifact bucket using `aws s3 cp`. The S3 key is derived from the invocation directory: anything under `models/` becomes the key prefix, with `model.tar.gz` appended. From this directory the destination is:
 
 ```text
 s3://genai-arcade-sagemaker-models/serverless-inference/gpt-2-next-token/model.tar.gz
 ```
 
-It is possible to override the bucket (default: `genai-arcade-sagemaker-models`) with the `SAGEMAKER_MODELS_BUCKET` environment variable. The script must be invoked from a directory under `sagemaker/` (it walks up the path looking for the `sagemaker` segment).
+It is possible to override the bucket (default: `genai-arcade-sagemaker-models`) with the `SAGEMAKER_MODELS_BUCKET` environment variable. The script must be invoked from a directory under `models/` (it walks up the path looking for the `models` segment).
 
 ## Updating the Model
 
@@ -111,9 +111,9 @@ The CDK stack creates:
 - a SageMaker endpoint named `gpt-2-next-token`,
 - Lambda permission for `sagemaker:InvokeEndpoint` on that endpoint.
 
-The endpoint is configured by the `SageMakerEndpoints` construct in `lib/sagemaker-endpoints.ts`, which uses the `SageMakerServerlessEndpoint` construct. Default serverless settings are `6144 MB` memory and max concurrency `20`.
+The endpoint is configured by the `SageMakerEndpoints` construct in `infra/sagemaker-endpoints.ts`, which uses the `SageMakerServerlessEndpoint` construct. Default serverless settings are `6144 MB` memory and max concurrency `20`.
 
-The Hugging Face PyTorch inference image is selected from the `HF_INFERENCE_IMAGE_URIS` mapping in `lib/sagemaker-endpoints.ts`. Add the target AWS region to that mapping before deploying the stack to a region that is not already listed.
+The Hugging Face PyTorch inference image is selected from the `HF_INFERENCE_IMAGE_URIS` mapping in `infra/sagemaker-endpoints.ts`. Add the target AWS region to that mapping before deploying the stack to a region that is not already listed.
 
 ## Remaining Configuration Values
 

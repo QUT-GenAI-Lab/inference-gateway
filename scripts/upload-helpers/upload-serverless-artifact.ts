@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import { MODEL_ARTIFACT_BUCKET_NAME } from "../../infra/sagemaker-endpoints";
 
-const SAGEMAKER_DIRECTORY = "sagemaker";
+const MODELS_DIRECTORY = "models";
 
 function normaliseToS3Path(value: string): string {
   return value.split(path.sep).join("/");
@@ -11,15 +11,15 @@ function normaliseToS3Path(value: string): string {
 
 function getS3KeyFromDirectory(directory: string): string {
   const parts = path.resolve(directory).split(path.sep);
-  const sagemakerIndex = parts.lastIndexOf(SAGEMAKER_DIRECTORY);
+  const modelsIndex = parts.lastIndexOf(MODELS_DIRECTORY);
 
-  if (sagemakerIndex === -1) {
+  if (modelsIndex === -1) {
     throw new Error(
-      `Expected the command to be run from a directory under "${SAGEMAKER_DIRECTORY}". Received: ${directory}`,
+      `Expected the command to be run from a directory under "${MODELS_DIRECTORY}". Received: ${directory}`,
     );
   }
 
-  const keyParts = parts.slice(sagemakerIndex + 1);
+  const keyParts = parts.slice(modelsIndex + 1);
 
   if (keyParts.length === 0) {
     throw new Error(`Could not derive an S3 key from directory: ${directory}`);

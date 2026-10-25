@@ -36,7 +36,7 @@ model/
 
 ## Gateway Contract
 
-The handler accepts the same JSON body as `GenerateChatSchema.input` in `lambda/lib/provider.ts`:
+The handler accepts the same JSON body as `GenerateChatSchema.input` in `src/lib/provider.ts`:
 
 ```json
 {

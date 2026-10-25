@@ -27,7 +27,7 @@ meta-llama/Llama-3.2-3B-Instruct
 
 ## Runtime Layout
 
-The committed layout contains only the inference code and the download/local runners. Model weights are downloaded into `model/` separately and are **not** committed (the repository `.gitignore` excludes `*.safetensors`, `*.model`, `*.jinja`, and `sagemaker/**/model/*.json`).
+The committed layout contains only the inference code and the download/local runners. Model weights are downloaded into `model/` separately and are **not** committed (the repository `.gitignore` excludes `*.safetensors`, `*.model`, `*.jinja`, and `models/**/model/*.json`).
 
 ```text
 llama-3-2-3b-instruct-generate-text/
@@ -96,7 +96,7 @@ python -m unittest discover -s tests
 
 ## Gateway Contract
 
-The handler accepts the same JSON body as `GenerateChatSchema.input` in `lambda/lib/provider.ts`:
+The handler accepts the same JSON body as `GenerateChatSchema.input` in `src/lib/provider.ts`:
 
 ```json
 {
